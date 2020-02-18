@@ -1,6 +1,8 @@
 # python artifacts
 *.pyc
 docs/projectq.*.rst
-*.so
+*.sw*
 build/
 var/
+*.data*
+*.txt*
