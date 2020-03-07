@@ -349,6 +349,62 @@ class Simulator(BasicEngine):
         """
         return self._simulator.cheat()
 
+    def c_get_expectation_value(self, operator,l):
+	    return self._simulator.get_expectation_value(operator,l)
+
+    def c_apply_qubit_operator(self, operator,l):
+        return self._simulator.apply_qubit_operator(operator,l)
+
+    def c_get_probability(self, bit_string,l):
+        return self._simulator.get_probability(bit_string,l)
+
+    def c_get_amplitude(self, bit_string,l):
+        return self._simulator.get_amplitude(bit_string,l)
+
+    def c_set_wavefunction(self, wavefunction,l):
+        return self._simulator.set_wavefunction(wavefunction,l)
+
+    def c_collapse_wavefunction(self, l,l2):
+        return self._simulator.collapse_wavefunction(l,l2)
+
+    def c_cheat(self):
+        return self._simulator.cheat()
+
+    def c_measure_qubits(self, ids):
+        return self._simulator.measure_qubits(ids)
+
+    def c_allocate_qubit(self, ID):
+        return self._simulator.allocate_qubit(ID)
+
+    def c_deallocate_qubit(self, ID):
+        return self._simulator.deallocate_qubit(ID)
+
+    def c_emulate_math(self, math_fun,qubitids,l):
+        return self._simulator.emulate_math(math_fun,qubitids,l)
+
+    def c_emulate_math_addConstant(self, a,qubitids,l):
+        return self._simulator.emulate_math_addConstant(a,qubitids,l)
+
+    def c_emulate_math_addConstantModN(self, a,N,qubitids,l):
+        return self._simulator.emulate_math_addConstantModN(a,N,qubitids,l)
+
+    def c_emulate_math_multiplyByConstantModN(self, a,N,qubitids,l):
+        return self._simulator.emulate_math_multiplyByConstantModN(a,N,qubitids,l)
+
+    def c_emulate_math(self, math_fun,qubitids,l):
+        return self._simulator.emulate_math(math_fun,qubitids,l)
+
+    def c_emulate_time_evolution(self, op,t,qubitids,ctrlids):
+        return self._simulator.emulate_time_evolution(op,t,qubitids,ctrlids)
+
+    def c_apply_controlled_gate(self, tolist,ids,l):
+        return self._simulator.apply_controlled_gate(tolist,ids,l)
+
+    def c_run(self):
+        return self._simulator.run()
+
+
+
     def _handle(self, cmd):
         """
         Handle all commands, i.e., call the member functions of the C++-
@@ -365,7 +421,7 @@ class Simulator(BasicEngine):
         if cmd.gate == Measure:
             assert(get_control_count(cmd) == 0)
             ids = [qb.id for qr in cmd.qubits for qb in qr]
-            out = self._simulator.measure_qubits(ids)
+            out = self.c_measure_qubits(ids)
             i = 0
             for qr in cmd.qubits:
                 for qb in qr:
@@ -381,10 +437,10 @@ class Simulator(BasicEngine):
                     i += 1
         elif cmd.gate == Allocate:
             ID = cmd.qubits[0][0].id
-            self._simulator.allocate_qubit(ID)
+            self.c_allocate_qubit(ID)
         elif cmd.gate == Deallocate:
             ID = cmd.qubits[0][0].id
-            self._simulator.deallocate_qubit(ID)
+            self.c_deallocate_qubit(ID)
         elif isinstance(cmd.gate, BasicMathGate):
             # improve performance by using C++ code for some commomn gates
             from projectq.libs.math import (AddConstant,
@@ -397,22 +453,22 @@ class Simulator(BasicEngine):
                     qubitids[-1].append(qb.id)
             if FALLBACK_TO_PYSIM:
                 math_fun = cmd.gate.get_math_function(cmd.qubits)
-                self._simulator.emulate_math(math_fun, qubitids,
+                self.c_emulate_math(math_fun, qubitids,
                                              [qb.id for qb in cmd.control_qubits])
             else:
                 # individual code for different standard gates to make it faster!
                 if isinstance(cmd.gate, AddConstant):
-                    self._simulator.emulate_math_addConstant(cmd.gate.a, qubitids,
+                    self.c_emulate_math_addConstant(cmd.gate.a, qubitids,
                                                              [qb.id for qb in cmd.control_qubits])
                 elif isinstance(cmd.gate, AddConstantModN):
-                    self._simulator.emulate_math_addConstantModN(cmd.gate.a, cmd.gate.N, qubitids,
+                    self.c_emulate_math_addConstantModN(cmd.gate.a, cmd.gate.N, qubitids,
                                                                  [qb.id for qb in cmd.control_qubits])
                 elif isinstance(cmd.gate, MultiplyByConstantModN):
-                    self._simulator.emulate_math_multiplyByConstantModN(cmd.gate.a, cmd.gate.N, qubitids,
+                    self.c_emulate_math_multiplyByConstantModN(cmd.gate.a, cmd.gate.N, qubitids,
                                                                         [qb.id for qb in cmd.control_qubits])
                 else:
                     math_fun = cmd.gate.get_math_function(cmd.qubits)
-                    self._simulator.emulate_math(math_fun, qubitids,
+                    self.c_emulate_math(math_fun, qubitids,
                                                  [qb.id for qb in cmd.control_qubits])
         elif isinstance(cmd.gate, TimeEvolution):
             op = [(list(term), coeff) for (term, coeff)
@@ -420,7 +476,7 @@ class Simulator(BasicEngine):
             t = cmd.gate.time
             qubitids = [qb.id for qb in cmd.qubits[0]]
             ctrlids = [qb.id for qb in cmd.control_qubits]
-            self._simulator.emulate_time_evolution(op, t, qubitids, ctrlids)
+            self.c_emulate_time_evolution(op, t, qubitids, ctrlids)
         elif len(cmd.gate.matrix) <= 2 ** 5:
             matrix = cmd.gate.matrix
             ids = [qb.id for qr in cmd.qubits for qb in qr]
@@ -430,12 +486,12 @@ class Simulator(BasicEngine):
                                     str(cmd.gate),
                                     int(math.log(len(cmd.gate.matrix), 2)),
                                     len(ids)))
-            self._simulator.apply_controlled_gate(matrix.tolist(),
+            self.c_apply_controlled_gate(matrix.tolist(),
                                                   ids,
                                                   [qb.id for qb in
                                                    cmd.control_qubits])
             if not self._gate_fusion:
-                self._simulator.run()
+                self.c_run()
         else:
             raise Exception("This simulator only supports controlled k-qubit"
                             " gates with k < 6!\nPlease add an auto-replacer"
@@ -455,6 +511,6 @@ class Simulator(BasicEngine):
             if not cmd.gate == FlushGate():
                 self._handle(cmd)
             else:
-                self._simulator.run()  # flush gate --> run all saved gates
+                self.c_run()  # flush gate --> run all saved gates
             if not self.is_last_engine:
                 self.send([cmd])
