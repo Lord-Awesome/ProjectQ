@@ -92,7 +92,9 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
             }
 
             //Every thread stores their result back into the vector
-            vec[element_id] = result;
+			if (element_id < vec_size) {
+				vec[element_id] = result;
+			}
         }
     }
 }
