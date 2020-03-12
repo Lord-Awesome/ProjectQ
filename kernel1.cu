@@ -1,15 +1,38 @@
 //TODO: I got this off of stackoverflow. I don't know if we actually have thrust
-#include <thrust/complex.h>
+#include <cuComplex.h>
+#include <cuda.h>
+#include <stdio.h>
+#include <iostream>
+#include <vector>
+#include <stdexcept>
 
-#define MAT_DIM = 2;
-typedef thrust::complex<float> complex;
+#define MAT_DIM 2
+#define C(r, i) make_cuFloatComplex(r, i)
+typedef cuFloatComplex complex;
+
+//Overload complex number functions
+__device__ __host__ complex operator*(complex a, complex b) {return cuCmulf(a,b);}
+__device__ __host__ complex operator+(complex a, complex b) {return cuCaddf(a,b);}
+__device__ __host__ complex operator/(complex a, complex b) {return cuCdivf(a,b);}
+__device__ __host__ bool operator==(complex a, complex b) {
+	return a == b;
+}
+__device__ __host__ bool operator!=(complex a, complex b) {
+	return a != b;
+}
+__host__ std::ostream & operator << (std::ostream &out, const complex &c) {
+	out << cuCrealf(c);
+	out << " +i";
+	out << cuCimagf(c);
+	return out;
+}
 
 __constant__ complex operator_matrix[MAT_DIM][MAT_DIM];
 
 __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int elements_per_chunk) {
 
     //batch: pairs before regions overlap
-    const int batch_size = pow(2,quibit_id+1); //in elements
+	const unsigned long batch_size = 1UL << (qubit_id + 1); //in elements
     
     //chunk: a portion of the batch that fits in one working set (batch size / working memory)
     const int chunks_per_batch = ceil(batch_size / (float)elements_per_chunk);
@@ -62,10 +85,10 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
             int pair_indices[MAT_DIM];
             pair_indices[0] = thread_id % (elements_per_chunk/2);
             pair_indices[1] = pair_indices[0] + (elements_per_chunk/2);
-            complex result = 0;
+            complex result = C(0.0f,0.0f);
             //Do the matrix multiplication. If you're dealing with the first element in the pair, you deal with the top row of the matrix. Similar for second element in pair.
             for (int i = 0; i < MAT_DIM; i++) {
-                result += operator_matrix[thread_in_first_half][i] * smem[pair_indices[i]];
+                result = result + operator_matrix[thread_in_first_half][i] * smem[pair_indices[i]];
             }
 
             //Every thread stores their result back into the vector
@@ -76,7 +99,7 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
 
 //TODO: Header
 void run_kernel(complex* vec, int vec_size, int qubit_id, complex* source_matrix) {
-    cudaDeviceSynchronize());
+    cudaDeviceSynchronize();
 
     //Fill operator matrix in const mem
     cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyDeviceToDevice);
@@ -93,10 +116,11 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, complex* source_matrix
     int chunk_size = std::min(smem_size_in_elems, max_threads_per_block);
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
-    dim3 gridDim(deviceProp.maxGridSize/blockDim.x);
+	int grid_size = deviceProp.maxGridSize[0];
+    dim3 gridDim(grid_size);
 
     one_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(vec, vec_size, qubit_id, chunk_size);
-    cudaDeviceSynchronize());
+    cudaDeviceSynchronize();
 }
 
 
@@ -107,35 +131,32 @@ int main() {
 
     //Generate state vector
     unsigned long state_vec_size = 1UL << num_qubits;
-    std::vector<complex> state_vec(state_vec_size, 0);
+    std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
     for (unsigned long i = 0; i < state_vec_size; i++) {
         float bit = i%2;
-        complex real_part(bit, 0.0f);
-        complex imag_part (0.0f, 1.0f-bit);
-        complex val = real_part + imag_part;
-        (0 + i1) or (1 + i0)
+		//complex val;
+		complex val = C(bit, 1.0f-bit);
+        //(0 + i1) or (1 + i0)
         state_vec[i] = val; 
     }
 
     //Generate source matrix
     complex source_matrix[4];
-    source_matrix[0] = 0;
-    source_matrix[1] = 1;
-    source_matrix[2] = 1;
-    source_matrix[3] = 0;
+    source_matrix[0] = C(0.0f, 0.0f);
+    source_matrix[1] = C(1.0f, 0.0f);
+    source_matrix[2] = C(1.0f, 0.0f);
+    source_matrix[3] = C(0.0f, 0.0f);
 
     //Apply NOT gate
-    run_kernel(state_vec.begin(), state_vec_size, kth_qubit, source_matrix) {
+    run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix);
 
     //Check state vector
     for (unsigned long i = 0; i < state_vec_size; i++) {
         float bit = i%2;
-        complex correct_real(0.0f, 1.0f-bit);
-        complex correct_imag(1.0f-bit, 0.0f);
-        complex correct_val = correct_real + correct_image;
-        assert(state_vec[i] == correct_val);
+		//complex correct_val;
+		complex correct_val = C(1.0f-bit, bit);
         if (state_vec[i] != correct_val) {
-            cout << "state_vec[" << i << "]: " << state_vec[i] << "\t correct_val: " << correct_val << endl;
+            std::cout << "state_vec[" << i << "]: " << state_vec[i] << "\t correct_val: " << correct_val << std::endl;
             throw std::runtime_error("Bad final val in state vec");
         }
     }
