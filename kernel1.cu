@@ -7,6 +7,15 @@
 #include <stdexcept>
 #include <fstream>
 
+#define CUDACHECK(cmd) \
+    cudaError_t error=cmd; \
+    if(error != cudaSuccess) { \
+        printf("%s in %s at line %d\n", cudaGetErrorString(error),__ \
+        FILE__,__LINE__); \
+        exit(EXIT_FAILURE); \
+    }
+
+#define FILENAME "state_vec.txt"
 #define MAT_DIM 2
 #define C(r, i) make_cuDoubleComplex(r, i)
 typedef cuDoubleComplex complex;
@@ -26,6 +35,18 @@ __host__ std::ostream & operator << (std::ostream &out, const complex &c) {
 	out << ",";
 	out << cuCimag(c) << ")\n";
 	return out;
+}
+__host__ std::istream & operator >> (std::istream &in, complex &c) {
+    char _; //throw out variable
+    double real;
+    double imag;
+    in >> _; //"("
+    in >> real;
+    in >> _; //","
+    in >> imag;
+    in >> _ >> _; //")\n";
+    c = C(real, imag);
+    return in;
 }
 
 __constant__ complex operator_matrix[MAT_DIM][MAT_DIM];
@@ -70,6 +91,8 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
             //Finally, use the thread_id to figure out which element in that half-working-set to read
             int element_id = (batch_id * batch_size) + (chunk_id * (elements_per_chunk/2)) + offset + thread_id;
 
+            __syncthreads();
+
             //Do the read. With all threads in the block participating, this fills smem for that block.
             if (element_id < vec_size) {
                 smem[thread_id] = vec[element_id];
@@ -98,14 +121,17 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
 			}
         }
     }
+
+    //assert(vec[vec_size-1] == C(0.0f,0.0f));
 }
 
 //TODO: Header
-void run_kernel(complex* vec, int vec_size, int qubit_id, complex* source_matrix) {
+template <class M>
+void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     cudaDeviceSynchronize();
 
     //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyDeviceToDevice);
+    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
 
     //Get smem size
     cudaDeviceProp deviceProp;
@@ -120,35 +146,54 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, complex* source_matrix
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
 	int grid_size = deviceProp.maxGridSize[0];
-    dim3 gridDim(grid_size);
+    dim3 gridDim(std::min(grid_size, (int) ceil(vec_size/(float)chunk_size)));
 
-    one_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(vec, vec_size, qubit_id, chunk_size);
+    //print some stats about the GPU
+    std::cout << "smem_size_in_elems: " << smem_size_in_elems << std::endl;
+    std::cout << "max_threads_per_block: " << max_threads_per_block << std::endl;;
+    std::cout << "chunk size: " << chunk_size << std::endl;;
+    std::cout << "grid size: " << grid_size << std::endl;;
+
+    std::cout << "block dim: " << blockDim.x << std::endl;
+    std::cout << "grid dim: " << gridDim.x << std::endl;
+
+    //memcpy and run the kernel
+    complex *d_vec;
+    cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
+    cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
+    one_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, qubit_id, chunk_size);
     cudaDeviceSynchronize();
+    cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
+    cudaFree(d_vec);
 }
-
 
 int main() {
 
-    int num_qubits = 14;
     int kth_qubit = 11;
 
-    //Generate state vector
-    unsigned long state_vec_size = 1UL << num_qubits;
-    std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
-    for (unsigned long i = 0; i < state_vec_size; i++) {
-        double bit = i%2;
-		//complex val;
-		complex val = C(bit, 1.0f-bit);
-        //(0 + i1) or (1 + i0)
-        state_vec[i] = val; 
+    //Read state vector
+    std::vector<complex> state_vec;
+    std::ifstream fin;
+    fin.open(FILENAME);
+    complex temp;
+    while(fin >> temp) {
+        state_vec.push_back(temp);
     }
+    state_vec.push_back(temp);
+    fin.close();
+
+    unsigned long state_vec_size = state_vec.size();
 
     //Generate source matrix
-    complex source_matrix[4];
-    source_matrix[0] = C(0.0f, 0.0f);
-    source_matrix[1] = C(1.0f, 0.0f);
-    source_matrix[2] = C(1.0f, 0.0f);
-    source_matrix[3] = C(0.0f, 0.0f);
+    complex source_matrix[2][2];
+    //source_matrix[0][0] = C(0.0f, 0.0f);
+    //source_matrix[0][1] = C(1.0f, 0.0f);
+    //source_matrix[1][0] = C(1.0f, 0.0f);
+    //source_matrix[1][1] = C(0.0f, 0.0f);
+    source_matrix[0][0] = C(0.0f, 0.0f);
+    source_matrix[0][1] = C(0.0f, 0.0f);
+    source_matrix[1][0] = C(0.0f, 0.0f);
+    source_matrix[1][1] = C(0.0f, 0.0f);
 
     //Apply NOT gate
     run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix);
@@ -156,10 +201,14 @@ int main() {
     std::ofstream f;
     f.open("output.txt");
     for (unsigned long i = 0; i < state_vec_size; ++i) {
-	complex val = state_vec[i];
-	f << val;	
+        complex val = state_vec[i];
+        f << val;	
     }
     f.close();
     
+    //debug
+    std::cout << "size: " << state_vec.size() << std::endl;
+    std::cout << state_vec.back() << std::endl;
+
     return 0;
 }

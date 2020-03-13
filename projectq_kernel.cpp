@@ -21,7 +21,7 @@
 
 typedef std::complex<double> complex;
 #define C(r, i) complex(r, i)
-
+#define FILENAME "state_vec.txt"
 
 template <class V, class M>
 inline void kernel_core(V &psi, std::size_t I, std::size_t d0, M const& m)
@@ -64,18 +64,18 @@ void kernel(V &psi, unsigned id0, M const& m, std::size_t ctrlmask)
 }
 
 int main() {
-    int num_qubits = 14;
     int kth_qubit = 11;
 
-    unsigned long state_vec_size = 1UL << num_qubits;
-    std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
-    for (unsigned long i = 1; i < state_vec_size; i++){ 
-        float bit = i % 2;
-        complex val = C(bit, 1.0f-bit);
-        state_vec[i] = val;
+    //Read in state vec
+    std::vector<complex> state_vec;
+    std::ifstream fin;
+    fin.open(FILENAME);
+    complex temp;
+    while(fin >> temp) {
+        state_vec.push_back(temp);
     }
-    
-        
+    fin.close();
+
     complex source_matrix[2][2];
     source_matrix[0][0] = C(0.0f, 0.0f);
     source_matrix[0][1] = C(1.0f, 0.0f);
@@ -85,12 +85,12 @@ int main() {
     //Apply NOT gate
     kernel(state_vec, kth_qubit, source_matrix, 0);
     
-    std::ofstream f;
-    f.open("output_truth.txt");
-    for (unsigned long i = 0; i < state_vec_size; ++i) {
+    std::ofstream fout;
+    fout.open("output_truth.txt");
+    for (size_t i = 0; i < state_vec.size(); ++i) {
 	complex val = state_vec[i];
-	f << val << "\n";	
+	fout << val << "\n";	
     }
-    f.close();
+    fout.close();
     return 0;
 }
