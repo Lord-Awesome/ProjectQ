@@ -5,15 +5,16 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <fstream>
 
 #define MAT_DIM 2
-#define C(r, i) make_cuFloatComplex(r, i)
-typedef cuFloatComplex complex;
+#define C(r, i) make_cuDoubleComplex(r, i)
+typedef cuDoubleComplex complex;
 
 //Overload complex number functions
-__device__ __host__ complex operator*(complex a, complex b) {return cuCmulf(a,b);}
-__device__ __host__ complex operator+(complex a, complex b) {return cuCaddf(a,b);}
-__device__ __host__ complex operator/(complex a, complex b) {return cuCdivf(a,b);}
+__device__ __host__ complex operator*(complex a, complex b) {return cuCmul(a,b);}
+__device__ __host__ complex operator+(complex a, complex b) {return cuCadd(a,b);}
+__device__ __host__ complex operator/(complex a, complex b) {return cuCdiv(a,b);}
 __device__ __host__ bool operator==(complex a, complex b) {
 	return a == b;
 }
@@ -21,9 +22,9 @@ __device__ __host__ bool operator!=(complex a, complex b) {
 	return a != b;
 }
 __host__ std::ostream & operator << (std::ostream &out, const complex &c) {
-	out << cuCrealf(c);
-	out << " +i";
-	out << cuCimagf(c);
+	out << "(" << cuCreal(c);
+	out << ",";
+	out << cuCimag(c) << ")\n";
 	return out;
 }
 
@@ -111,7 +112,7 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, complex* source_matrix
     int dev_id = 0;
     cudaGetDeviceProperties(&deviceProp, dev_id);
     int smem_size_in_bytes = (int) deviceProp.sharedMemPerBlock;
-    int smem_size_in_elems = smem_size_in_bytes/(2*sizeof(float));
+    int smem_size_in_elems = smem_size_in_bytes/(2*sizeof(double));
 
     int max_threads_per_block = (int) deviceProp.maxThreadsPerBlock;
 
@@ -135,7 +136,7 @@ int main() {
     unsigned long state_vec_size = 1UL << num_qubits;
     std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
     for (unsigned long i = 0; i < state_vec_size; i++) {
-        float bit = i%2;
+        double bit = i%2;
 		//complex val;
 		complex val = C(bit, 1.0f-bit);
         //(0 + i1) or (1 + i0)
@@ -151,17 +152,14 @@ int main() {
 
     //Apply NOT gate
     run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix);
-
-    //Check state vector
-    for (unsigned long i = 0; i < state_vec_size; i++) {
-        float bit = i%2;
-		//complex correct_val;
-		complex correct_val = C(1.0f-bit, bit);
-        if (state_vec[i] != correct_val) {
-            std::cout << "state_vec[" << i << "]: " << state_vec[i] << "\t correct_val: " << correct_val << std::endl;
-            throw std::runtime_error("Bad final val in state vec");
-        }
+    
+    std::ofstream f;
+    f.open("output.txt");
+    for (unsigned long i = 0; i < state_vec_size; ++i) {
+	complex val = state_vec[i];
+	f << val;	
     }
-
+    f.close();
+    
     return 0;
 }
