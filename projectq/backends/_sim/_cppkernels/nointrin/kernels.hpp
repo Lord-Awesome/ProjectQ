@@ -21,10 +21,10 @@
 #include "../intrin/alignedallocator.hpp"
 
 template <class T>
-inline T add(T a, T b){ return a+b; }
+T add(T a, T b){ return a+b; }
 
 template <class T>
-inline T mul(T a, T b){ return a*b; }
+T mul(T a, T b){ return a*b; }
 
 
 #define LOOP_COLLAPSE1 2

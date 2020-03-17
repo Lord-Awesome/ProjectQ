@@ -80,16 +80,16 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
         for (int thread_id = threadIdx.x; thread_id < elements_per_chunk; thread_id += threads_per_block) {
 
             //Assuming high qubits, the block has data from two sections of the vector
-            int thread_in_first_half = thread_id < threads_per_block/2;
+            bool thread_in_first_half = thread_id < threads_per_block/2;
             //The first half of the chunk contains elements from one place in memory. The second half from another place in memory.
-            int offset = (thread_in_first_half) * (batch_size/2);
+            int offset = (!thread_in_first_half) * (batch_size/2);
         
             //Load in your element (state in the state_vec)
             //First index to a batch
             //Then, index into a chunk in that batch. The chunks read in data separate by chunk_size/2
             //Use offset to account for the fact that half of the threads read from the first half of the batch, and the other threads read from the second half of the batch
             //Finally, use the thread_id to figure out which element in that half-working-set to read
-            int element_id = (batch_id * batch_size) + (chunk_id * (elements_per_chunk/2)) + offset + thread_id;
+            int element_id = (batch_id * batch_size) + (chunk_id * (elements_per_chunk/2)) + offset + (thread_id % (threads_per_block/2));
 
             __syncthreads();
 
@@ -99,6 +99,7 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
             }
 
             __syncthreads();
+
 
             //Matrix multiplication
             //Every thread is responsible for one of the output elements.
@@ -112,13 +113,24 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
             complex result = C(0.0f,0.0f);
             //Do the matrix multiplication. If you're dealing with the first element in the pair, you deal with the top row of the matrix. Similar for second element in pair.
             for (int i = 0; i < MAT_DIM; i++) {
-                result = result + operator_matrix[thread_in_first_half][i] * smem[pair_indices[i]];
+                result = result + operator_matrix[!thread_in_first_half][i] * smem[pair_indices[i]];
+                //result = result + operator_matrix[thread_in_first_half][i] * C(1.0f,0.0f);
             }
 
             //Every thread stores their result back into the vector
 			if (element_id < vec_size) {
 				vec[element_id] = result;
 			}
+/*
+			//DEBUG
+			if (batch_id == 0 && grid_section == 0) {
+				//vec[thread_id] = smem[thread_id];
+				vec[thread_id] = C((float)offset, (float) element_id);
+			}
+			else if (element_id < vec_size) {
+				vec[element_id] = C(0.0f, 0.0f);
+			}
+*/
         }
     }
 
@@ -142,17 +154,23 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
 
     int max_threads_per_block = (int) deviceProp.maxThreadsPerBlock;
 
-    int chunk_size = std::min(smem_size_in_elems, max_threads_per_block);
+    //batch: pairs before regions overlap
+	const unsigned long batch_size = 1UL << (qubit_id + 1); //in elements
+
+	//A chunk can't be larger than shared memory because we need to hold it all at once
+	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
+	//A chunk can't be larger than a batch by definition
+    int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
-	int grid_size = deviceProp.maxGridSize[0];
-    dim3 gridDim(std::min(grid_size, (int) ceil(vec_size/(float)chunk_size)));
+	int max_grid_size = deviceProp.maxGridSize[0];
+    dim3 gridDim(std::min(max_grid_size, (int) ceil(vec_size/(float)chunk_size)));
 
     //print some stats about the GPU
     std::cout << "smem_size_in_elems: " << smem_size_in_elems << std::endl;
     std::cout << "max_threads_per_block: " << max_threads_per_block << std::endl;;
     std::cout << "chunk size: " << chunk_size << std::endl;;
-    std::cout << "grid size: " << grid_size << std::endl;;
+    std::cout << "max grid size: " << max_grid_size << std::endl;;
 
     std::cout << "block dim: " << blockDim.x << std::endl;
     std::cout << "grid dim: " << gridDim.x << std::endl;
@@ -191,8 +209,8 @@ int main() {
     //source_matrix[1][0] = C(1.0f, 0.0f);
     //source_matrix[1][1] = C(0.0f, 0.0f);
     source_matrix[0][0] = C(0.0f, 0.0f);
-    source_matrix[0][1] = C(0.0f, 0.0f);
-    source_matrix[1][0] = C(0.0f, 0.0f);
+    source_matrix[0][1] = C(1.0f, 0.0f);
+    source_matrix[1][0] = C(1.0f, 0.0f);
     source_matrix[1][1] = C(0.0f, 0.0f);
 
     //Apply NOT gate
