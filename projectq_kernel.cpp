@@ -18,6 +18,7 @@
 #include <complex>
 #include <algorithm>
 #include "kernels.hpp"
+#include <chrono>
 
 typedef std::complex<double> complex;
 #define C(r, i) complex(r, i)
@@ -63,8 +64,14 @@ void kernel(V &psi, unsigned id0, M const& m, std::size_t ctrlmask)
     }
 }
 
-int main() {
-    int kth_qubit = 11;
+int main(int argc, char **argv) {
+	if (argc != 2) {
+		std::cout << "Input args wrong. Needs exactly one input arg which is the kth qubit" << std::endl;
+		exit(1);
+	}
+
+	int kth_qubit = atoi(argv[1]);
+    //int kth_qubit = 11;
 
     //Read in state vec
     std::vector<complex> state_vec;
@@ -82,9 +89,21 @@ int main() {
     source_matrix[1][0] = C(1.0f, 0.0f);
     source_matrix[1][1] = C(0.0f, 0.0f);
 
+	auto start = std::chrono::high_resolution_clock::now();
+
     //Apply NOT gate
     kernel(state_vec, kth_qubit, source_matrix, 0);
     
+	auto stop = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	std::cout << "Baseline execution time: " << duration.count() << std::endl;
+
+	std::ofstream f_time;
+	f_time.open("time_comparison.txt");
+	f_time << duration.count() << "\n";
+	f_time.close();
+
     std::ofstream fout;
     fout.open("output_truth.txt");
     for (size_t i = 0; i < state_vec.size(); ++i) {

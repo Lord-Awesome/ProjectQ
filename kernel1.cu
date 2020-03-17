@@ -6,6 +6,7 @@
 #include <vector>
 #include <stdexcept>
 #include <fstream>
+#include <chrono>
 
 #define CUDACHECK(cmd) \
     cudaError_t error=cmd; \
@@ -172,6 +173,9 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     std::cout << "chunk size: " << chunk_size << std::endl;;
     std::cout << "max grid size: " << max_grid_size << std::endl;;
 
+	std::cout << "Vec size (num vectors is log2): " << vec_size << std::endl;
+	std::cout << "kth qubit: " << qubit_id << std::endl;
+
     std::cout << "block dim: " << blockDim.x << std::endl;
     std::cout << "grid dim: " << gridDim.x << std::endl;
 
@@ -185,9 +189,16 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     cudaFree(d_vec);
 }
 
-int main() {
+int main(int argc, char **argv) {
 
-    int kth_qubit = 11;
+	if (argc != 2) {
+		std::cout << "Input args wrong. Needs exactly one input arg which is the kth qubit" << std::endl;
+		exit(1);
+	}
+
+
+	int kth_qubit = atoi(argv[1]);
+    //int kth_qubit = 11;
 
     //Read state vector
     std::vector<complex> state_vec;
@@ -213,9 +224,21 @@ int main() {
     source_matrix[1][0] = C(1.0f, 0.0f);
     source_matrix[1][1] = C(0.0f, 0.0f);
 
+	auto start = std::chrono::high_resolution_clock::now();
+
     //Apply NOT gate
     run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix);
-    
+
+	auto stop = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	std::cout << "GPU kernel execution time: " << duration.count() << std::endl;
+
+	std::ofstream f_time;
+	f_time.open("time_comparison.txt", std::ios_base::app);
+	f_time << duration.count() << "\n";
+	f_time.close();
+ 
     std::ofstream f;
     f.open("output.txt");
     for (unsigned long i = 0; i < state_vec_size; ++i) {
@@ -227,6 +250,7 @@ int main() {
     //debug
     std::cout << "size: " << state_vec.size() << std::endl;
     std::cout << state_vec.back() << std::endl;
+
 
     return 0;
 }
