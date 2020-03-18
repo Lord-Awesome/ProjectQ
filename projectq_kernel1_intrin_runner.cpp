@@ -17,52 +17,12 @@
 #include <fstream>
 #include <complex>
 #include <algorithm>
-#include "kernels.hpp"
+#include "intrin_kernels.hpp"
 #include <chrono>
 
 typedef std::complex<double> complex;
 #define C(r, i) complex(r, i)
 #define FILENAME "state_vec.txt"
-
-template <class V, class M>
-inline void kernel_core(V &psi, std::size_t I, std::size_t d0, M const& m)
-{
-    std::complex<double> v[2];
-    v[0] = psi[I];
-    v[1] = psi[I + d0];
-
-    psi[I] = (add(mul(v[0], m[0][0]), mul(v[1], m[0][1])));
-    psi[I + d0] = (add(mul(v[0], m[1][0]), mul(v[1], m[1][1])));
-
-}
-
-// bit indices id[.] are given from high to low (e.g. control first for CNOT)
-template <class V, class M>
-void kernel(V &psi, unsigned id0, M const& m, std::size_t ctrlmask)
-{
-    std::size_t n = psi.size();
-    std::size_t d0 = 1UL << id0;
-    std::size_t dsorted[] = {d0 };
-    std::sort(dsorted, dsorted + 1, std::greater<std::size_t>());
-
-    if (ctrlmask == 0){
-        #pragma omp for collapse(LOOP_COLLAPSE1) schedule(static)
-        for (std::size_t i0 = 0; i0 < n; i0 += 2 * dsorted[0]){
-            for (std::size_t i1 = 0; i1 < dsorted[0]; ++i1){
-                kernel_core(psi, i0 + i1, d0, m);
-            }
-        }
-    }
-    else{
-        #pragma omp for collapse(LOOP_COLLAPSE1) schedule(static)
-        for (std::size_t i0 = 0; i0 < n; i0 += 2 * dsorted[0]){
-            for (std::size_t i1 = 0; i1 < dsorted[0]; ++i1){
-                if (((i0 + i1)&ctrlmask) == ctrlmask)
-                    kernel_core(psi, i0 + i1, d0, m);
-            }
-        }
-    }
-}
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -92,16 +52,17 @@ int main(int argc, char **argv) {
 	auto start = std::chrono::high_resolution_clock::now();
 
     //Apply NOT gate
+	//From  projectq_kernel1_intrin.cpp
     kernel(state_vec, kth_qubit, source_matrix, 0);
     
 	auto stop = std::chrono::high_resolution_clock::now();
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-	std::cout << "Baseline execution time: " << duration.count() << std::endl;
+	std::cout << "Intrin baseline time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;
-	f_time.open("time_comparison.txt");
-	f_time << duration.count() << "\n";
+	f_time.open("time_comparison.txt", std::ios_base::app);
+	f_time << "Intrin baseline time: " << duration.count() << "\n";
 	f_time.close();
 
     std::ofstream fout;

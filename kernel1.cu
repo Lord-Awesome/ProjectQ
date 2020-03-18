@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
 
 	std::ofstream f_time;
 	f_time.open("time_comparison.txt", std::ios_base::app);
-	f_time << duration.count() << "\n";
+	f_time << "GPU time: " << duration.count() << "\n";
 	f_time.close();
  
     std::ofstream f;

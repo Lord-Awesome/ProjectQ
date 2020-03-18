@@ -3,12 +3,14 @@ KTH_QUBIT=16
 
 echo "\n\n---------- Compiling ----------\n\n"
 g++ --std=c++11 gen_state_vec.cpp -o gen_state_vec.o || exit 1
-g++ --std=c++11 projectq_kernel.cpp kernels.hpp -o projectq_kernel.o || exit 1
+g++ --std=c++11 projectq_kernel1_nointrin_runner.cpp kernels.hpp -o projectq_kernel1_nointrin_runner.o || exit 1
+g++ --std=c++11 -mavx projectq_kernel1_intrin_runner.cpp kernels.hpp -o projectq_kernel1_intrin_runner.o || exit 1
 nvcc --std=c++11 kernel1.cu -o kernel1.o || exit 1
 
 echo "\n\n---------- Generating truth ----------\n\n"
 ./gen_state_vec.o $NUM_QUBITS || exit 1
-./projectq_kernel.o $KTH_QUBIT || exit 1
+./projectq_kernel1_nointrin_runner.o $KTH_QUBIT || exit 1
+./projectq_kernel1_intrin_runner.o $KTH_QUBIT || exit 1
 
 echo "\n\n---------- Running job on GPU ----------\n\n"
 #--wait allows bash to wait for it to be done
