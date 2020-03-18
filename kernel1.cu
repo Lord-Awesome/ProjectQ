@@ -52,6 +52,8 @@ __host__ std::istream & operator >> (std::istream &in, complex &c) {
 
 __constant__ complex operator_matrix[MAT_DIM][MAT_DIM];
 
+std::chrono::high_resolution_clock::time_point start, stop;
+
 __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int elements_per_chunk) {
 
     //batch: pairs before regions overlap
@@ -180,6 +182,8 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     std::cout << "grid dim: " << gridDim.x << std::endl;
 
     //memcpy and run the kernel
+	start = std::chrono::high_resolution_clock::now();
+
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
@@ -187,6 +191,8 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     cudaDeviceSynchronize();
     cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
     cudaFree(d_vec);
+
+	stop = std::chrono::high_resolution_clock::now();
 }
 
 int main(int argc, char **argv) {
@@ -224,12 +230,10 @@ int main(int argc, char **argv) {
     source_matrix[1][0] = C(1.0f, 0.0f);
     source_matrix[1][1] = C(0.0f, 0.0f);
 
-	auto start = std::chrono::high_resolution_clock::now();
 
     //Apply NOT gate
     run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix);
 
-	auto stop = std::chrono::high_resolution_clock::now();
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 	std::cout << "GPU kernel execution time: " << duration.count() << std::endl;
