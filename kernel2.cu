@@ -17,14 +17,15 @@
     }
 
 #define FILENAME "state_vec.txt"
-#define MAT_DIM 2
-#define C(r, i) make_cuDoubleComplex(r, i)
-typedef cuDoubleComplex complex;
+#define MAT_FILENAME "source_matrix.txt"
+#define MAT_DIM 4
+#define C(r, i) make_cuComplex(r, i)
+typedef cuComplex complex;
 
 //Overload complex number functions
-__device__ __host__ complex operator*(complex a, complex b) {return cuCmul(a,b);}
-__device__ __host__ complex operator+(complex a, complex b) {return cuCadd(a,b);}
-__device__ __host__ complex operator/(complex a, complex b) {return cuCdiv(a,b);}
+__device__ __host__ complex operator*(complex a, complex b) {return cuCmulf(a,b);}
+__device__ __host__ complex operator+(complex a, complex b) {return cuCaddf(a,b);}
+__device__ __host__ complex operator/(complex a, complex b) {return cuCdivf(a,b);}
 __device__ __host__ bool operator==(complex a, complex b) {
 	return a == b;
 }
@@ -32,9 +33,9 @@ __device__ __host__ bool operator!=(complex a, complex b) {
 	return a != b;
 }
 __host__ std::ostream & operator << (std::ostream &out, const complex &c) {
-	out << "(" << cuCreal(c);
+	out << "(" << cuCrealf(c);
 	out << ",";
-	out << cuCimag(c) << ")\n";
+	out << cuCimagf(c) << ")\n";
 	return out;
 }
 __host__ std::istream & operator >> (std::istream &in, complex &c) {
@@ -225,27 +226,23 @@ int main(int argc, char **argv) {
 
     unsigned long state_vec_size = state_vec.size();
 
-    //Generate source matrix (anti-diagonal)
-    complex source_matrix[4][4];
-    source_matrix[0][0] = C(0.0f, 0.0f);
-    source_matrix[0][1] = C(0.0f, 0.0f);
-    source_matrix[0][2] = C(0.0f, 0.0f);
-    source_matrix[0][3] = C(1.0f, 0.0f);
-    source_matrix[1][0] = C(0.0f, 0.0f);
-    source_matrix[1][1] = C(0.0f, 0.0f);
-    source_matrix[1][2] = C(1.0f, 0.0f);
-    source_matrix[1][3] = C(0.0f, 0.0f);
-    source_matrix[2][0] = C(0.0f, 0.0f);
-    source_matrix[2][1] = C(1.0f, 0.0f);
-    source_matrix[2][2] = C(0.0f, 0.0f);
-    source_matrix[2][3] = C(0.0f, 0.0f);
-    source_matrix[3][0] = C(1.0f, 0.0f);
-    source_matrix[3][1] = C(0.0f, 0.0f);
-    source_matrix[3][2] = C(0.0f, 0.0f);
-    source_matrix[3][3] = C(0.0f, 0.0f);
 
+	//Read in source matrix
+	complex source_matrix[4][4];
+	fin.open(MAT_FILENAME);
+	if (!fin.is_open()) {
+		std::cout << "Source matrix does not exist!" << std::endl;
+		exit(1);
+	}
+	for (int i = 0; i < MAT_DIM; i++) {
+		for (int j = 0; j < MAT_DIM; j++) {
+			fin >> temp;
+			source_matrix[i][j] = temp;
+		}
+	}
+	fin.close();
 
-    //Apply NOT gate
+    //Apply gate
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix);
 
 

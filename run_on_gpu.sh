@@ -22,23 +22,23 @@ module load cuda
 
 # Run
 # $1 is the kth qubit
-if [$1 -eq 1]
+if [ $1 -eq 1 ]
 then
 	./kernel1.o $2
 fi
-if [$1 -eq 2]
+if [ $1 -eq 2 ]
 then
 	./kernel2.o $2 $3
 fi
-if [$1 -eq 3]
+if [ $1 -eq 3 ]
 then
 	./kernel3.o $2 $3 $4
 fi
-if [$1 -eq 4]
+if [ $1 -eq 4 ]
 then
 	./kernel4.o $2 $3 $4 $5
 fi
-if [$1 -eq 5]
+if [ $1 -eq 5 ]
 then
 	./kernel5.o $2 $3 $4 $5 $6
 fi

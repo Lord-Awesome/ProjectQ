@@ -1,5 +1,5 @@
 NUM_QUBITS=20
-NUM_QUBIT_IDS=2
+NUM_QUBIT_IDS=1
 #Ascending IDs
 QUBIT0=4
 QUBIT1=12
@@ -10,8 +10,8 @@ QUBIT4=16
 
 echo "\n\n---------- Compiling with G++----------\n\n"
 g++ --std=c++11 gen_state_vec.cpp -o gen_state_vec.o || exit 1
-g++ --std=c++11 projectq_kernel_nointrin_runner.cpp -o projectq_kernel_nointrin_runner.o -I./projectq/backends/_sim/_cppkernels/nointrin/ || exit 1
-g++ --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_intrin_runner.o -I./projectq/backends/_sim/_cppkernels/intrin/ || exit 1
+g++ -g --std=c++11 projectq_kernel_nointrin_runner.cpp -o projectq_kernel_nointrin_runner.o -I./projectq/backends/_sim/_cppkernels/nointrin/ || exit 1
+g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_intrin_runner.o -I./projectq/backends/_sim/_cppkernels/intrin/ || exit 1
 echo "\n\n---------- Compiling with NVCC----------\n\n"
 nvcc --std=c++11 kernel1.cu -o kernel1.o || exit 1
 nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
@@ -21,6 +21,8 @@ nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
 
 echo "\n\n---------- Generating truth ----------\n\n"
 ./gen_state_vec.o $NUM_QUBITS || exit 1
+~/Python-3.8.1/python3.8 source_generate.py $NUM_QUBIT_IDS
+
 if [ $NUM_QUBIT_IDS -eq 1 ]
 then
 	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT0 || exit 1
