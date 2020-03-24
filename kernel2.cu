@@ -89,7 +89,7 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
         for (int thread_id = threadIdx.x; thread_id < elements_per_chunk; thread_id += threads_per_block) {
             result[0] = C(0.0f,0.0f);
             result[1] = C(0.0f,0.0f);
-            for (int pair_id = 0; pair_id < 2; pair++) {
+            for (int pair_id = 0; pair_id < 2; pair_id++) {
 
                 bool thread_in_first_half = thread_id < threads_per_block/2;
                 int offset = (!thread_in_first_half) * (batch0_size/2) + pair_id*(batch1_size/2);
@@ -118,8 +118,8 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
                 pair_indices[1] = pair_indices[0] + (elements_per_chunk/2);
                 //Do the matrix multiplication. If you're dealing with the first element in the pair, you deal with the top row of the matrix. Similar for second element in pair.
                 for (int i = 0; i < 2; i++) {
-                    result[0] += operator_matrix[!thread_in_first_half][i + (pair_id*2)] * smem[pair_indices[i]]
-                    result[1] += operator_matrix[!thread_in_first_half + 2][i + (pair_id*2)] * smem[pair_indices[i]]
+                    result[0] = result[0] + operator_matrix[!thread_in_first_half][i + (pair_id*2)] * smem[pair_indices[i]];
+                    result[1] = result[1] + operator_matrix[!thread_in_first_half + 2][i + (pair_id*2)] * smem[pair_indices[i]];
                 }
             }
 
@@ -147,7 +147,7 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
 
 //TODO: Header
 template <class M>
-void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
+void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matrix) {
     cudaDeviceSynchronize();
 
     //Fill operator matrix in const mem
@@ -163,7 +163,7 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     int max_threads_per_block = (int) deviceProp.maxThreadsPerBlock;
 
     //batch: pairs before regions overlap
-	const unsigned long batch_size = 1UL << (qubit_id + 1); //in elements
+	const unsigned long batch_size = 1UL << (quid0 + 1); //in elements
 
 	//A chunk can't be larger than shared memory because we need to hold it all at once
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
@@ -181,7 +181,8 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     std::cout << "max grid size: " << max_grid_size << std::endl;;
 
 	std::cout << "Vec size (num vectors is log2): " << vec_size << std::endl;
-	std::cout << "kth qubit: " << qubit_id << std::endl;
+	std::cout << "quid0: " << quid0 << std::endl;
+	std::cout << "quid1: " << quid1 << std::endl;
 
     std::cout << "block dim: " << blockDim.x << std::endl;
     std::cout << "grid dim: " << gridDim.x << std::endl;
@@ -192,7 +193,7 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
-    one_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, qubit_id, chunk_size);
+    two_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, chunk_size);
     cudaDeviceSynchronize();
     cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
     cudaFree(d_vec);
@@ -208,8 +209,8 @@ int main(int argc, char **argv) {
 	}
 
 
-	int jth_qubit = atoi(argv[1]);
-	int kth_qubit = atoi(argv[2]);
+	int quid0 = atoi(argv[1]);
+	int quid1 = atoi(argv[2]);
 
     //Read state vector
     std::vector<complex> state_vec;
@@ -245,7 +246,7 @@ int main(int argc, char **argv) {
 
 
     //Apply NOT gate
-    run_kernel(state_vec.data(), state_vec_size, jth_qubit, kth_qubit, source_matrix);
+    run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix);
 
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
