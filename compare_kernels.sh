@@ -1,5 +1,5 @@
 NUM_QUBITS=20
-NUM_QUBIT_IDS=1
+NUM_QUBIT_IDS=2
 #Ascending IDs
 QUBIT0=4
 QUBIT1=12
@@ -81,7 +81,7 @@ echo "\n\n---------- Copying log file ----------\n\n"
 cp ~/570_job* slurm_job_output/
 rm ~/570_job*
 
-vimdiff output.txt output_truth.txt
+#vimdiff output.txt output_truth.txt
 
 
 

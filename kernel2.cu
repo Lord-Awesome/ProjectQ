@@ -94,9 +94,10 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
 
                 bool thread_in_first_half = thread_id < threads_per_block/2;
                 int offset = (!thread_in_first_half) * (batch0_size/2) + pair_id*(batch1_size/2);
-            
-                element_id[pair_id] = (batch_id1 * batch1_size) + (batch_id0 * batch0_size);
-                element_id[pair_id] += (chunk_id * (elements_per_chunk/2)) + offset + (thread_id % (threads_per_block/2));
+ 
+                //element_id[pair_id] = (batch_id1 * batch1_size) + (batch_id0 * batch0_size);
+                //element_id[pair_id] += (chunk_id * (elements_per_chunk/2)) + offset + (thread_id % (threads_per_block/2));
+				element_id[pair_id] = 0;
 
                 __syncthreads();
 
@@ -127,7 +128,8 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
             //Every thread stores their result back into the vector
             for(int i = 0; i < 2; i++) {
                 if (element_id[i] < vec_size) {
-                    vec[element_id[i]] = result[i];
+                    //vec[element_id[i]] = result[i];
+                    vec[element_id[i]] = C(1.0f, 1.0f);
                 }
             }
 /*
@@ -193,10 +195,12 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
 
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
-    cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
+    cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
+	std::cout << "Copying to device error is: " << cpy_error << std::endl;
     two_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, chunk_size);
     cudaDeviceSynchronize();
-    cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
+    cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
+	std::cout << "Copying to host error is: " << cpy_error << std::endl;
     cudaFree(d_vec);
 
 	stop = std::chrono::high_resolution_clock::now();
@@ -234,10 +238,12 @@ int main(int argc, char **argv) {
 		std::cout << "Source matrix does not exist!" << std::endl;
 		exit(1);
 	}
+	std::cout << "here is the source matrix: " << std::endl;
 	for (int i = 0; i < MAT_DIM; i++) {
 		for (int j = 0; j < MAT_DIM; j++) {
 			fin >> temp;
 			source_matrix[i][j] = temp;
+			std::cout << temp << std::endl;
 		}
 	}
 	fin.close();
