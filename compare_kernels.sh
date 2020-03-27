@@ -1,4 +1,4 @@
-NUM_QUBITS=20
+NUM_QUBITS=16
 NUM_QUBIT_IDS=2
 #Ascending IDs
 QUBIT0=4
@@ -80,6 +80,9 @@ echo "\n\n---------- Job Done ----------\n\n"
 echo "\n\n---------- Copying log file ----------\n\n"
 cp ~/570_job* slurm_job_output/
 rm ~/570_job*
+
+echo "\n\n---------- Comparing output ----------\n\n"
+~/Python-3.8.1/python3.8 compare_outputs.py
 
 #vimdiff output.txt output_truth.txt
 
