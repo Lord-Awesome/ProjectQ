@@ -1,4 +1,4 @@
-//TODO: I got this off of stackoverflow. I don't know if we actually have thrust
+//todo: i got this off of stackoverflow. i don't know if we actually have thrust
 #include <cuComplex.h>
 #include <cuda.h>
 #include <stdio.h>
@@ -61,9 +61,11 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
     //batch: pairs before regions overlap
     const unsigned long batch0_size = 1UL << (qid0 + 1);
     const unsigned long batch1_size = 1UL << (qid1 + 1);
+	const unsigned long batch0s_per_batch1 = 1UL << (qid1-qid0);
     
     //chunk: a portion of the batch that fits in one working set (batch size / working memory)
-    const int chunks_per_batch = ceil(batch0_size / (float)elements_per_chunk);
+    const int chunks_per_batch0 = ceil(batch0_size / (float)elements_per_chunk);
+    const int chunks_per_batch1 = ceil(batch1_size / (float)elements_per_chunk);
 
     //One chunk per block
     int total_chunks = ceil(vec_size / (float)elements_per_chunk);
@@ -77,27 +79,34 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
     //In case there are more chunks than blocks in the grid
     for (int grid_section = 0; grid_section < total_grid_sections; grid_section++) {
         //Which batch within the state vector you are in
+		/*
         int global_batch_id = ((grid_section * blocks_per_grid) + blockIdx.x) / chunks_per_batch;
         int batch_id0 = global_batch_id % (1UL << (qid1-qid0));
         int batch_id1 = global_batch_id / (1UL << (qid1-qid0));
-        //Which chunk within the batch you are in
-        int chunk_id = blockIdx.x % chunks_per_batch;
+		*/
+
+        int global_chunk_id = ((grid_section * blocks_per_grid) + blockIdx.x);
+		int batch_id1 = global_chunk_id / (chunks_per_batch1/2);
+		int batch_id0 = (global_chunk_id % (chunks_per_batch1/2)) / (chunks_per_batch0);
+        int chunk_id = global_chunk_id % chunks_per_batch0;
+
         //Which thread within the block you are in
         int threads_per_block = blockDim.x; //also equal to chunk_size
 
         complex result[2]; 
         int element_id[2];
+		volatile int debug_counter = 0;
         for (int thread_id = threadIdx.x; thread_id < elements_per_chunk; thread_id += threads_per_block) {
             result[0] = C(0.0f,0.0f);
             result[1] = C(0.0f,0.0f);
             for (int pair_id = 0; pair_id < 2; pair_id++) {
 
                 bool thread_in_first_half = thread_id < threads_per_block/2;
-                int offset = (!thread_in_first_half) * (batch0_size/2) + pair_id*(batch1_size/2);
+                int offset = ((!thread_in_first_half) * (batch0_size/2)) + (pair_id*(batch1_size/2));
  
-                //element_id[pair_id] = (batch_id1 * batch1_size) + (batch_id0 * batch0_size);
-                //element_id[pair_id] += (chunk_id * (elements_per_chunk/2)) + offset + (thread_id % (threads_per_block/2));
-				element_id[pair_id] = 0;
+                element_id[pair_id] = (batch_id1 * batch1_size) + (batch_id0 * batch0_size);
+                element_id[pair_id] += (chunk_id * (elements_per_chunk/2)) + offset + (thread_id % (threads_per_block/2));
+				//element_id[pair_id] = 0;
 
                 __syncthreads();
 
@@ -129,7 +138,10 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
             for(int i = 0; i < 2; i++) {
                 if (element_id[i] < vec_size) {
                     //vec[element_id[i]] = result[i];
-                    vec[element_id[i]] = C(1.0f, 1.0f);
+                    //vec[element_id[i]] = C((float)pair_indices[0], (float)pair_indices[1]);
+					if (i == 0) {
+						vec[element_id[0]] = C((float)global_chunk_id, (float)batch_id0);
+					}
                 }
             }
 /*
