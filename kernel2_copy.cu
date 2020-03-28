@@ -1,4 +1,4 @@
-//todo: i got this off of stackoverflow. i don't know if we actually have thrust
+//TODO: I got this off of stackoverflow. I don't know if we actually have thrust
 #include <cuComplex.h>
 #include <cuda.h>
 #include <stdio.h>
@@ -58,77 +58,94 @@ std::chrono::high_resolution_clock::time_point start, stop;
 __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1, int elements_per_chunk) {
     //qid0 is smaller than qid1
 
+    //batch: pairs before regions overlap
+    const unsigned long batch0_size = 1UL << (qid0 + 1);
+    const unsigned long batch1_size = 1UL << (qid1 + 1);
+    
+    //chunk: a portion of the batch that fits in one working set (batch size / working memory)
+    const int chunks_per_batch = ceil(batch0_size / (float)elements_per_chunk);
+
+    //One chunk per block
+    int total_chunks = ceil(vec_size / (float)elements_per_chunk);
+
     //Initialize shared memory
     extern __shared__ complex smem[];
 
-    int elements_per_thread = 4; //2 quibit kernel
-    int working_set = elements_per_chunk;
+    int blocks_per_grid = gridDim.x;
+    int total_grid_sections = ceil(total_chunks / (float) 2*blocks_per_grid);
 
-    int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
-    for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
+    //In case there are more chunks than blocks in the grid
+    for (int grid_section = 0; grid_section < total_grid_sections; grid_section++) {
+        //Which batch within the state vector you are in
+        int global_batch_id = ((grid_section * blocks_per_grid) + blockIdx.x) / chunks_per_batch;
+        int batch_id0 = global_batch_id % (1UL << (qid1-qid0));
+        int batch_id1 = global_batch_id / (1UL << (qid1-qid0));
+        //Which chunk within the batch you are in
+        int chunk_id = blockIdx.x % chunks_per_batch;
+        //Which thread within the block you are in
+        int threads_per_block = blockDim.x; //also equal to chunk_size
 
-        //inside batch0
-        int blocks_per_batch0 = (1 << qid0) / working_set;
-        int chunk_id = global_block_id % blocks_per_batch0;
+        complex result[2]; 
+        int element_id[2];
+        for (int thread_id = threadIdx.x; thread_id < elements_per_chunk; thread_id += threads_per_block) {
+            result[0] = C(0.0f,0.0f);
+            result[1] = C(0.0f,0.0f);
+            for (int pair_id = 0; pair_id < 2; pair_id++) {
 
-        //inside batch1
-        int blocks_per_batch1 = (1 << qid1) / (2 * working_set);
-        int batch1_depth = (global_block_id % blocks_per_batch1);
-        int batch0_id = batch1_depth / blocks_per_batch0;
-        int batch0_stride = 2 * (1 << qid0);
+                bool thread_in_first_half = thread_id < threads_per_block/2;
+                int offset = (!thread_in_first_half) * (batch0_size/2) + pair_id*(batch1_size/2);
+ 
+                //element_id[pair_id] = (batch_id1 * batch1_size) + (batch_id0 * batch0_size);
+                //element_id[pair_id] += (chunk_id * (elements_per_chunk/2)) + offset + (thread_id % (threads_per_block/2));
+				element_id[pair_id] = 0;
 
-        //top
-        int batch1_id = global_block_id / blocks_per_batch1;
-        int batch1_stride = 2 * (1 << qid1);
+                __syncthreads();
 
-        int element_id_base = 0;
-        element_id_base += threadIdx.x;
-        element_id_base += chunk_id * working_set;
-        element_id_base += batch0_id * batch0_stride;
-        element_id_base += batch1_id * batch1_stride;
-
-        //iteration dependent
-
-        complex result[4];
-        for(int row = 0; row < 4; row++) {
-            result[row] = C(0.0f, 0.0f);
-        }
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-                int offset = (i * (1 << qid1)) + (j * (1 << qid0));
-                int element_id = element_id_base + offset;
-
-                //load
-                if(element_id < vec_size) {
-                    smem[threadIdx.x] = vec[element_id];
-                }
-                else {
-                    smem[threadIdx.x] = C(1.0f,1.0f);
+                //Do the read. With all threads in the block participating, this fills smem for that block.
+                if (element_id[pair_id] < vec_size) {
+                    smem[thread_id] = vec[element_id[pair_id]];
                 }
 
-                //compute
-                int column = (2*i)+j;
-                for(int row = 0; row < 4; row++) {
-                    result[row] = result[row] + operator_matrix[row][column]*smem[threadIdx.x];
-                    //result[row] = result[row] + column*smem[threadIdx.x];
-                }
-            }
-        }
+                __syncthreads();
 
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-                int offset = (i * (1 << qid1)) + (j * (1 << qid0));
-                int element_id = element_id_base + offset;
 
-                //store
-                int row = (2*i)+j;
-                if(element_id < vec_size) {
-                    vec[element_id] = result[row];
-                    //vec[element_id] = C((float)element_id, (float)offset);
+                //Matrix multiplication
+                //Every thread is responsible for one of the output elements.
+                //This is a bit messy. I was trying to make it scalable to tuples larger than pairs
+                //The two elements of the pair are disjoint in smem. Figure out where they are.
+                //Two threads are searching for the same pair, since the multiplication produces a 2-element column vector
+                //Therefore, need to do this modulo stuff
+                int pair_indices[2];
+                pair_indices[0] = thread_id % (elements_per_chunk/2);
+                pair_indices[1] = pair_indices[0] + (elements_per_chunk/2);
+                //Do the matrix multiplication. If you're dealing with the first element in the pair, you deal with the top row of the matrix. Similar for second element in pair.
+                for (int i = 0; i < 2; i++) {
+                    result[0] = result[0] + operator_matrix[!thread_in_first_half][i + (pair_id*2)] * smem[pair_indices[i]];
+                    result[1] = result[1] + operator_matrix[!thread_in_first_half + 2][i + (pair_id*2)] * smem[pair_indices[i]];
                 }
             }
+
+            //Every thread stores their result back into the vector
+            for(int i = 0; i < 2; i++) {
+                if (element_id[i] < vec_size) {
+                    //vec[element_id[i]] = result[i];
+                    vec[element_id[i]] = C(1.0f, 1.0f);
+                }
+            }
+/*
+			//DEBUG
+			if (batch_id == 0 && grid_section == 0) {
+				//vec[thread_id] = smem[thread_id];
+				vec[thread_id] = C((float)offset, (float) element_id);
+			}
+			else if (element_id < vec_size) {
+				vec[element_id] = C(0.0f, 0.0f);
+			}
+*/
         }
     }
+
+    //assert(vec[vec_size-1] == C(0.0f,0.0f));
 }
 
 //TODO: Header
