@@ -3,7 +3,11 @@ import random
 
 n = int(sys.argv[1])
 with open(f'source_matrix.txt', 'w') as f:
-	for _ in range(2**n):
-		for _ in range(2**n):
-			f.write(f'({str(random.random())}, {str(random.random())})')
+	for i in range(2**n):
+		for j in range(2**n):
+			#f.write(f'({str(random.random())}, {str(random.random())})')
+			if(i == j):
+				f.write('(1,0)')
+			else:
+				f.write('(0,0)')
 			#f.write("(0,0)")
