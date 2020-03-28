@@ -7,7 +7,7 @@
 #define SEED 1234
 #define FILENAME "state_vec.txt"
 
-typedef std::complex<double> complex;
+typedef std::complex<float> complex;
 #define C(r, i) complex(r, i)
 
 int main(int argc, char **argv) {
@@ -26,8 +26,8 @@ int main(int argc, char **argv) {
     std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
     for (unsigned long i = 0; i < state_vec_size; i++){ 
         //Note: normalization ignored for now
-        double real = ((double) rand() / (RAND_MAX));
-        double imag = ((double) rand() / (RAND_MAX));
+        float real = ((float) rand() / (RAND_MAX));
+        float imag = ((float) rand() / (RAND_MAX));
         complex val = C(real, imag);
         state_vec[i] = val;
         f << val << "\n";
