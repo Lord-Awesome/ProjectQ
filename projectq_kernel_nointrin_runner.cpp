@@ -74,7 +74,8 @@ int main(int argc, char **argv) {
 	std::cout << "No intrin baseline time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;
-	f_time.open("time_comparison.txt");
+	//f_time.open("time_comparison.txt");
+	f_time.open("time_comparison.txt", std::ios_base::app);
 	f_time << "No intrin baseline time: " << duration.count() << "\n";
 	f_time.close();
 
