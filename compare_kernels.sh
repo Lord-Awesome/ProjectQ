@@ -2,7 +2,7 @@ NUM_QUBITS=20
 NUM_QUBIT_IDS=2
 #Ascending IDs
 QUBIT0=10
-QUBIT1=16
+QUBIT1=12
 QUBIT2=15
 QUBIT3=15
 QUBIT4=16
@@ -15,7 +15,7 @@ g++ -g --std=c++11 projectq_kernel_nointrin_runner.cpp -o projectq_kernel_nointr
 g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_intrin_runner.o -I./projectq/backends/_sim/_cppkernels/intrin/ || exit 1
 echo "\n\n---------- Compiling with NVCC----------\n\n"
 nvcc --std=c++11 kernel1.cu -o kernel1.o || exit 1
-nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
+nvcc --std=c++11 kernel2_copy.cu -o kernel2.o || exit 1
 #nvcc --std=c++11 kernel3.cu -o kernel3.o || exit 1
 #nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
 #nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
@@ -32,23 +32,23 @@ then
 fi
 if [ $NUM_QUBIT_IDS -eq 2 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 3 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 4 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 5 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3 $QUBIT4 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3 $QUBIT4 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
 
 echo "\n\n---------- Running job on GPU ----------\n\n"

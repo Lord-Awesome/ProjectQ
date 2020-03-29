@@ -1,5 +1,6 @@
 //todo: i got this off of stackoverflow. i don't know if we actually have thrust
 #include <cuComplex.h>
+#include <complex>
 #include <cuda.h>
 #include <stdio.h>
 #include <iostream>
@@ -40,8 +41,8 @@ __host__ std::ostream & operator << (std::ostream &out, const complex &c) {
 }
 __host__ std::istream & operator >> (std::istream &in, complex &c) {
     char _; //throw out variable
-    double real;
-    double imag;
+    float real;
+    float imag;
     in >> _; //"("
     in >> real;
     in >> _; //","
@@ -99,17 +100,30 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
                 int element_id = element_id_base + offset;
 
                 //load
+				complex val;
                 if(element_id < vec_size) {
-                    smem[threadIdx.x] = vec[element_id];
+                    //smem[threadIdx.x] = vec[element_id];
+					val = vec[element_id];
                 }
                 else {
-                    smem[threadIdx.x] = C(1.0f,1.0f);
+                    //smem[threadIdx.x] = C(0.0f,0.0f);
+					val = C(0.0f,0.0f);
                 }
 
                 //compute
                 int column = (2*i)+j;
                 for(int row = 0; row < 4; row++) {
-                    result[row] = result[row] + operator_matrix[row][column]*smem[threadIdx.x];
+                    //result[row] = result[row] + C(1.0f,0.0f);
+					/*
+					if (row == column) {
+						result[row] = result[row] + val;
+					}
+					else {
+						result[row] = result[row] + C(0.0f,0.0f);
+					}
+					*/
+                    //result[row] = result[row] + val;
+                    result[row] = result[row] + (operator_matrix[row][column]*val);
                     //result[row] = result[row] + column*smem[threadIdx.x];
                 }
             }
@@ -128,6 +142,17 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
                 }
             }
         }
+
+/*
+		if (blockIdx.x == 0 && threadIdx.x == 0) {
+			for (int i = 0; i < 4; i++) {
+				for (int j = 0; j < 4; j++) {
+					vec[4*i + j] = operator_matrix[i][j];
+				}
+			}
+		}
+*/
+
     }
 }
 
@@ -135,9 +160,6 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
 template <class M>
 void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matrix) {
     cudaDeviceSynchronize();
-
-    //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
 
     //Get smem size
     cudaDeviceProp deviceProp;
@@ -149,7 +171,7 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
     int max_threads_per_block = (int) deviceProp.maxThreadsPerBlock;
 
     //batch: pairs before regions overlap
-	const unsigned long batch_size = 1UL << (quid0 + 1); //in elements
+	const unsigned long batch_size = 1UL << (quid0); //in elements
 
 	//A chunk can't be larger than shared memory because we need to hold it all at once
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
@@ -214,25 +236,32 @@ int main(int argc, char **argv) {
     unsigned long state_vec_size = state_vec.size();
 
 
-	//Read in source matrix
-	complex source_matrix[4][4];
-	fin.open(MAT_FILENAME);
-	if (!fin.is_open()) {
-		std::cout << "Source matrix does not exist!" << std::endl;
-		exit(1);
-	}
+    std::vector<complex> source_matrix_vec;
 	std::cout << "here is the source matrix: " << std::endl;
-	for (int i = 0; i < MAT_DIM; i++) {
-		for (int j = 0; j < MAT_DIM; j++) {
-			fin >> temp;
-			source_matrix[i][j] = temp;
-			std::cout << temp << std::endl;
-		}
+    fin.open(MAT_FILENAME);
+	std::complex<float> std_complex_temp;
+    while(fin >> std_complex_temp) {
+		temp = C(std_complex_temp.real(), std_complex_temp.imag());
+        source_matrix_vec.push_back(temp);
+		std::cout << temp << std::endl;
+    }
+	if (fin.rdstate() == std::ios_base::failbit) {
+		std::cout << "Ifstream failed with failbit" << std::endl;
 	}
-	fin.close();
+	else if (fin.rdstate() == std::ios_base::eofbit) {
+		std::cout << "Ifstream failed with eofbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::badbit) {
+		std::cout << "Ifstream failed with badbit" << std::endl;
+	}
+    source_matrix_vec.push_back(temp);
+    fin.close();
 
     //Apply gate
-    run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix);
+    //Fill operator matrix in const mem
+    cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+
+    run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix_vec.data());
 
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);

@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
 		for (unsigned long j = 0; j < MATDIM; j++){
 			float real = ((float) rand() / (RAND_MAX));
 			float imag = ((float) rand() / (RAND_MAX));
+			/*
 			if (i == j) {
 				real = 1.0f;
 				imag = 0.0f;
@@ -34,6 +35,7 @@ int main(int argc, char **argv) {
 				real = 0.0f;
 				imag = 0.0f;
 			}
+			*/
 			complex val = C(real, imag);
 			f << val << "\n";
 		}
