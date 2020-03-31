@@ -1,0 +1,12 @@
+smem_size_in_elems: 3072
+max_threads_per_block: 1024
+chunk size: 32
+max grid size: 2147483647
+Vec size (num vectors is log2): 1048576
+kth qubit: 4
+block dim: 32
+grid dim: 32768
+GPU kernel execution time: 3
+size: 1048576
+(-0.650556,0.688533)
+
