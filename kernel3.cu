@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, quid2, source_matrix_vec.data());
 
 
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 	std::cout << "GPU kernel execution time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;
