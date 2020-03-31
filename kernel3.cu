@@ -134,7 +134,7 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
 					int row = (4*i)+(2*j)+k;
 					if(element_id < vec_size) {
 						vec[element_id] = result[row];
-						//vec[element_id] = C((float)element_id,(float)batch2_id);
+						//vec[element_id] = C((float)element_id_base,(float)offset);
 					}
 				}//k
             }//j
@@ -216,10 +216,22 @@ int main(int argc, char **argv) {
     std::ifstream fin;
     fin.open(FILENAME);
     complex temp;
-    while(fin >> temp) {
+	std::complex<float> std_complex_temp;
+    while(fin >> std_complex_temp) {
+		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
     state_vec.push_back(temp);
+	if (fin.rdstate() == std::ios_base::failbit) {
+		std::cout << "Ifstream failed with failbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::eofbit) {
+		std::cout << "Ifstream failed with eofbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::badbit) {
+		std::cout << "Ifstream failed with badbit" << std::endl;
+	}
+	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
 
     unsigned long state_vec_size = state_vec.size();
@@ -228,7 +240,6 @@ int main(int argc, char **argv) {
     std::vector<complex> source_matrix_vec;
 	std::cout << "here is the source matrix: " << std::endl;
     fin.open(MAT_FILENAME);
-	std::complex<float> std_complex_temp;
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         source_matrix_vec.push_back(temp);

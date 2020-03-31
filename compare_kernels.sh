@@ -1,11 +1,11 @@
-NUM_QUBITS=20
+NUM_QUBITS=21
 NUM_QUBIT_IDS=5
 #Ascending IDs
-QUBIT0=5
-QUBIT1=8
-QUBIT2=14
-QUBIT3=16
-QUBIT4=18
+QUBIT0=4
+QUBIT1=5
+QUBIT2=17
+QUBIT3=18
+QUBIT4=19
 
 
 echo "\n\n---------- Removing time_comparison.txt ----------\n\n"

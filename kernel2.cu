@@ -125,6 +125,7 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
                 int row = (2*i)+j;
                 if(element_id < vec_size) {
                     vec[element_id] = result[row];
+                    //vec[element_id] = C((float)element_id, (float)offset);
                 }
             }
         }
@@ -161,9 +162,10 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
 
     //print some stats about the GPU
     std::cout << "smem_size_in_elems: " << smem_size_in_elems << std::endl;
-    std::cout << "max_threads_per_block: " << max_threads_per_block << std::endl;;
-    std::cout << "chunk size: " << chunk_size << std::endl;;
-    std::cout << "max grid size: " << max_grid_size << std::endl;;
+    std::cout << "max_threads_per_block: " << max_threads_per_block << std::endl;
+    std::cout << "chunk size: " << chunk_size << std::endl;
+    std::cout << "max grid size: " << max_grid_size << std::endl;
+	std::cout << "ceil(vec_size/(float)chunk_size): " << (int) ceil(vec_size/(float)chunk_size) << std::endl;
 
 	std::cout << "Vec size (num vectors is log2): " << vec_size << std::endl;
 	std::cout << "quid0: " << quid0 << std::endl;
@@ -200,14 +202,28 @@ int main(int argc, char **argv) {
 	int quid1 = atoi(argv[2]);
 
     //Read state vector
+	std::cout << "Reading in state vector" << std::endl;
     std::vector<complex> state_vec;
+	std::cout << "Vector maximum size: " << state_vec.max_size() << std::endl;
     std::ifstream fin;
     fin.open(FILENAME);
     complex temp;
-    while(fin >> temp) {
+	std::complex<float> std_complex_temp;
+    while(fin >> std_complex_temp) {
+		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
     state_vec.push_back(temp);
+	if (fin.rdstate() == std::ios_base::failbit) {
+		std::cout << "Ifstream failed with failbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::eofbit) {
+		std::cout << "Ifstream failed with eofbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::badbit) {
+		std::cout << "Ifstream failed with badbit" << std::endl;
+	}
+	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
 
     unsigned long state_vec_size = state_vec.size();
@@ -216,7 +232,6 @@ int main(int argc, char **argv) {
     std::vector<complex> source_matrix_vec;
 	std::cout << "here is the source matrix: " << std::endl;
     fin.open(MAT_FILENAME);
-	std::complex<float> std_complex_temp;
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         source_matrix_vec.push_back(temp);
@@ -241,7 +256,7 @@ int main(int argc, char **argv) {
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix_vec.data());
 
 
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 	std::cout << "GPU kernel execution time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;

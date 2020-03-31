@@ -3,8 +3,9 @@
 #include<fstream>
 #include <iostream>
 #include<complex>
+#include <iomanip>
 
-#define SEED 1234
+#define SEED 1235
 #define FILENAME "state_vec.txt"
 
 typedef std::complex<float> complex;
@@ -15,21 +16,23 @@ int main(int argc, char **argv) {
 		std::cout << "Input args wrong. Needs exactly one input arg which is the total number of qubits" << std::endl;
 		exit(1);
 	}
-	
+
 	int NUM_QUBITS = atoi(argv[1]);
 
     srand(SEED);
     std::ofstream f;
     f.open(FILENAME);
+	f << std::fixed;
+	f << std::setprecision(6);
 
     unsigned long state_vec_size = 1UL << NUM_QUBITS;
-    std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
+    //std::vector<complex> state_vec(state_vec_size, C(0.0f, 0.0f));
     for (unsigned long i = 0; i < state_vec_size; i++){ 
         //Note: normalization ignored for now
-        float real = ((float) rand() / (RAND_MAX));
-        float imag = ((float) rand() / (RAND_MAX));
+        float real = ((float) rand() / (float) (RAND_MAX));
+        float imag = ((float) rand() / (float) (RAND_MAX));
         complex val = C(real, imag);
-        state_vec[i] = val;
+        //state_vec[i] = val;
         f << val << "\n";
     }
     f.close();

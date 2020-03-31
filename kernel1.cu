@@ -1,5 +1,6 @@
 //TODO: I got this off of stackoverflow. I don't know if we actually have thrust
 #include <cuComplex.h>
+#include <complex>
 #include <cuda.h>
 #include <stdio.h>
 #include <iostream>
@@ -146,9 +147,6 @@ template <class M>
 void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
     cudaDeviceSynchronize();
 
-    //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
-
     //Get smem size
     cudaDeviceProp deviceProp;
     int dev_id = 0;
@@ -212,34 +210,55 @@ int main(int argc, char **argv) {
     std::ifstream fin;
     fin.open(FILENAME);
     complex temp;
-    while(fin >> temp) {
+	std::complex<float> std_complex_temp;
+    while(fin >> std_complex_temp) {
+		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
     state_vec.push_back(temp);
+	if (fin.rdstate() == std::ios_base::failbit) {
+		std::cout << "Ifstream failed with failbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::eofbit) {
+		std::cout << "Ifstream failed with eofbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::badbit) {
+		std::cout << "Ifstream failed with badbit" << std::endl;
+	}
+	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
 
     unsigned long state_vec_size = state_vec.size();
 
+
 	//Read in source matrix
-	complex source_matrix[2][2];
-	fin.open(MAT_FILENAME);
-	if (!fin.is_open()) {
-		std::cout << "Source matrix does not exist!" << std::endl;
-		exit(1);
+    std::vector<complex> source_matrix_vec;
+	std::cout << "here is the source matrix: " << std::endl;
+    fin.open(MAT_FILENAME);
+    while(fin >> std_complex_temp) {
+		temp = C(std_complex_temp.real(), std_complex_temp.imag());
+        source_matrix_vec.push_back(temp);
+		std::cout << temp << std::endl;
+    }
+	if (fin.rdstate() == std::ios_base::failbit) {
+		std::cout << "Ifstream failed with failbit" << std::endl;
 	}
-	for (int i = 0; i < MAT_DIM; i++) {
-		for (int j = 0; j < MAT_DIM; j++) {
-			fin >> temp;
-			source_matrix[i][j] = temp;
-		}
+	else if (fin.rdstate() == std::ios_base::eofbit) {
+		std::cout << "Ifstream failed with eofbit" << std::endl;
 	}
-	fin.close();
-
+	else if (fin.rdstate() == std::ios_base::badbit) {
+		std::cout << "Ifstream failed with badbit" << std::endl;
+	}
+    source_matrix_vec.push_back(temp);
+    fin.close();
     //Apply gate
-    run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix);
+    //Fill operator matrix in const mem
+    cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+
+    run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix_vec.data());
 
 
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 	std::cout << "GPU kernel execution time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;

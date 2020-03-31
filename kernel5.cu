@@ -240,10 +240,22 @@ int main(int argc, char **argv) {
     std::ifstream fin;
     fin.open(FILENAME);
     complex temp;
-    while(fin >> temp) {
+	std::complex<float> std_complex_temp;
+    while(fin >> std_complex_temp) {
+		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
     state_vec.push_back(temp);
+	if (fin.rdstate() == std::ios_base::failbit) {
+		std::cout << "Ifstream failed with failbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::eofbit) {
+		std::cout << "Ifstream failed with eofbit" << std::endl;
+	}
+	else if (fin.rdstate() == std::ios_base::badbit) {
+		std::cout << "Ifstream failed with badbit" << std::endl;
+	}
+	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
 
     unsigned long state_vec_size = state_vec.size();
@@ -252,7 +264,6 @@ int main(int argc, char **argv) {
     std::vector<complex> source_matrix_vec;
 	std::cout << "here is the source matrix: " << std::endl;
     fin.open(MAT_FILENAME);
-	std::complex<float> std_complex_temp;
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         source_matrix_vec.push_back(temp);
@@ -277,7 +288,7 @@ int main(int argc, char **argv) {
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, quid2, quid3, quid4, source_matrix_vec.data());
 
 
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 	std::cout << "GPU kernel execution time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;

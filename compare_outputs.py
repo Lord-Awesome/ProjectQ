@@ -15,6 +15,6 @@ with open('output.txt', 'r') as f1:
 				rms += (tup1[0] - tup2[0]) ** 2 + (tup1[0] - tup2[0]) ** 2
 				if not math.isclose(tup1[0], tup2[0], rel_tol=1E-4, abs_tol=1E-4) or not math.isclose(tup1[1], tup2[1], rel_tol=1E-4, abs_tol=1E-4):
 					print(i, tup1, tup2)
-					exit(1)
+					#exit(1)
 
 print(math.sqrt(rms / i))
