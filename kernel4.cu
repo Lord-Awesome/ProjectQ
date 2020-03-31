@@ -1,4 +1,3 @@
-//todo: i got this off of stackoverflow. i don't know if we actually have thrust
 #include <cuComplex.h>
 #include <complex>
 #include <cuda.h>
@@ -19,7 +18,7 @@
 
 #define FILENAME "state_vec.txt"
 #define MAT_FILENAME "source_matrix.txt"
-#define MAT_DIM 4
+#define MAT_DIM 16
 #define C(r, i) make_cuComplex(r, i)
 typedef cuComplex complex;
 
@@ -56,13 +55,13 @@ __constant__ complex operator_matrix[MAT_DIM][MAT_DIM];
 
 std::chrono::high_resolution_clock::time_point start, stop;
 
-__global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1, int elements_per_chunk) {
+__global__ void four_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1, int qid2, int qid3, int elements_per_chunk) {
     //qid0 is smaller than qid1
 
     //Initialize shared memory
-    extern __shared__ complex smem[];
+    //extern __shared__ complex smem[];
 
-    int elements_per_thread = MAT_DIM; //2 quibit kernel
+    int elements_per_thread = MAT_DIM; //4 quibit kernel
     int working_set = elements_per_chunk;
 
     int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
@@ -70,23 +69,37 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
 
         //inside batch0
         int blocks_per_batch0 = (1 << qid0) / working_set;
-        int chunk_id = global_block_id % blocks_per_batch0;
+        int batch0_stride = 2 * (1 << qid0);
 
         //inside batch1
         int blocks_per_batch1 = (1 << qid1) / (2 * working_set);
         int batch1_depth = (global_block_id % blocks_per_batch1);
-        int batch0_id = batch1_depth / blocks_per_batch0;
-        int batch0_stride = 2 * (1 << qid0);
-
-        //top
-        int batch1_id = global_block_id / blocks_per_batch1;
         int batch1_stride = 2 * (1 << qid1);
+
+		//inside batch2
+		int blocks_per_batch2 = (1 << qid2) / (4 * working_set);
+		int batch2_depth = (global_block_id % blocks_per_batch2);
+		int batch2_stride = 2 * (1 << qid2);
+
+		//inside batch3
+		int blocks_per_batch3 = (1 << qid3) / (8 * working_set);
+		int batch3_depth = (global_block_id % blocks_per_batch3);
+		int batch3_stride = 2 * (1 << qid3);
+
+        //ids
+        int chunk_id = global_block_id % blocks_per_batch0;
+        int batch0_id = batch1_depth / blocks_per_batch0;
+        int batch1_id = batch2_depth / blocks_per_batch1;
+        int batch2_id = batch3_depth / blocks_per_batch2;
+        int batch3_id = global_block_id / blocks_per_batch3;
 
         int element_id_base = 0;
         element_id_base += threadIdx.x;
         element_id_base += chunk_id * working_set;
         element_id_base += batch0_id * batch0_stride;
         element_id_base += batch1_id * batch1_stride;
+        element_id_base += batch2_id * batch2_stride;
+        element_id_base += batch3_id * batch3_stride;
 
         //iteration dependent
 
@@ -96,46 +109,51 @@ __global__ void two_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1,
         }
         for(int i = 0; i < 2; i++) {
             for(int j = 0; j < 2; j++) {
-                int offset = (i * (1 << qid1)) + (j * (1 << qid0));
-                int element_id = element_id_base + offset;
+				for (int k = 0; k < 2; k++) {
+					for (int l = 0; l < 2; l++) {
+						int offset = (i * (1 << qid3)) + (j * (1 << qid2)) + (k * (1 << qid1)) + (l * (1 << qid0));
+						int element_id = element_id_base + offset;
 
-                //load
-				complex val;
-                if(element_id < vec_size) {
-					val = vec[element_id];
-                }
-                else {
-					val = C(0.0f,0.0f);
-                }
+						//load
+						complex val = C(0.0f,0.0f);
+						if(element_id < vec_size) {
+							val = vec[element_id];
+						}
 
-                //compute
-                int column = (2*i)+j;
-                for(int row = 0; row < MAT_DIM; row++) {
-                    result[row] = result[row] + (operator_matrix[row][column]*val);
-                }
-            }
-        }
+						//compute
+						int column = (8*i)+(4*j)+(2*k)+l;
+						for(int row = 0; row < MAT_DIM; row++) {
+							result[row] = result[row] + (operator_matrix[row][column]*val);
+						}
+					}//l
+				}//k
+            }//j
+        }//i
 
         for(int i = 0; i < 2; i++) {
             for(int j = 0; j < 2; j++) {
-                int offset = (i * (1 << qid1)) + (j * (1 << qid0));
-                int element_id = element_id_base + offset;
+				for (int k = 0; k < 2; k++) {
+					for (int l = 0; l < 2; l++) {
+						int offset = (i * (1 << qid3)) + (j * (1 << qid2)) + (k * (1 << qid1)) + (l * (1 << qid0));
+						int element_id = element_id_base + offset;
 
-                //store
-                int row = (2*i)+j;
-                if(element_id < vec_size) {
-                    vec[element_id] = result[row];
-                }
-            }
-        }
-
+						//store
+						int row = (8*i)+(4*j)+(2*k)+l;
+						if(element_id < vec_size) {
+							vec[element_id] = result[row];
+							//vec[element_id] = C((float)element_id, (float)offset);
+						}
+					}//l
+				}//k
+            }//j
+        }//i
 
     }
 }
 
 //TODO: Header
 template <class M>
-void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matrix) {
+void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int quid3, M source_matrix) {
     cudaDeviceSynchronize();
 
     //Get smem size
@@ -162,12 +180,15 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
     //print some stats about the GPU
     std::cout << "smem_size_in_elems: " << smem_size_in_elems << std::endl;
     std::cout << "max_threads_per_block: " << max_threads_per_block << std::endl;;
+    std::cout << "batch size: " << batch_size << std::endl;;
     std::cout << "chunk size: " << chunk_size << std::endl;;
     std::cout << "max grid size: " << max_grid_size << std::endl;;
 
 	std::cout << "Vec size (num vectors is log2): " << vec_size << std::endl;
 	std::cout << "quid0: " << quid0 << std::endl;
 	std::cout << "quid1: " << quid1 << std::endl;
+	std::cout << "quid2: " << quid2 << std::endl;
+	std::cout << "quid3: " << quid3 << std::endl;
 
     std::cout << "block dim: " << blockDim.x << std::endl;
     std::cout << "grid dim: " << gridDim.x << std::endl;
@@ -179,7 +200,7 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
 	std::cout << "Copying to device error is: " << cpy_error << std::endl;
-    two_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, chunk_size);
+    four_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, quid3, chunk_size);
     cudaDeviceSynchronize();
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
 	std::cout << "Copying to host error is: " << cpy_error << std::endl;
@@ -190,14 +211,16 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
 
 int main(int argc, char **argv) {
 
-	if (argc != 3) {
-		std::cout << "Input args wrong. Needs exactly two input arg which is the jth and kth qubit" << std::endl;
+	if (argc != 5) {
+		std::cout << "Input args wrong. Needs exactly four input args" << std::endl;
 		exit(1);
 	}
 
 
 	int quid0 = atoi(argv[1]);
 	int quid1 = atoi(argv[2]);
+	int quid2 = atoi(argv[3]);
+	int quid3 = atoi(argv[4]);
 
     //Read state vector
     std::vector<complex> state_vec;
@@ -238,7 +261,7 @@ int main(int argc, char **argv) {
     //Fill operator matrix in const mem
     cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
 
-    run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix_vec.data());
+    run_kernel(state_vec.data(), state_vec_size, quid0, quid1, quid2, quid3, source_matrix_vec.data());
 
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);

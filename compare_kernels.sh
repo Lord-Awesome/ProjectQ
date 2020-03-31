@@ -1,12 +1,15 @@
 NUM_QUBITS=20
-NUM_QUBIT_IDS=2
+NUM_QUBIT_IDS=5
 #Ascending IDs
-QUBIT0=9
-QUBIT1=13
-QUBIT2=15
-QUBIT3=15
-QUBIT4=16
+QUBIT0=5
+QUBIT1=8
+QUBIT2=14
+QUBIT3=16
+QUBIT4=18
 
+
+echo "\n\n---------- Removing time_comparison.txt ----------\n\n"
+rm time_comparison.txt
 
 echo "\n\n---------- Compiling with G++----------\n\n"
 g++ --std=c++11 gen_state_vec.cpp -o gen_state_vec.o || exit 1
@@ -16,9 +19,9 @@ g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_in
 echo "\n\n---------- Compiling with NVCC----------\n\n"
 nvcc --std=c++11 kernel1.cu -o kernel1.o || exit 1
 nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
-#nvcc --std=c++11 kernel3.cu -o kernel3.o || exit 1
-#nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
-#nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
+nvcc --std=c++11 kernel3.cu -o kernel3.o || exit 1
+nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
+nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
 
 echo "\n\n---------- Generating truth ----------\n\n"
 ./gen_state_vec.o $NUM_QUBITS || exit 1
