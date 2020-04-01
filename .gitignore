@@ -7,3 +7,4 @@ var/
 *.data*
 *.txt*
 *.o
+slurm*
