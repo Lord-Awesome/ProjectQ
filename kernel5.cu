@@ -65,6 +65,7 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
     int working_set = elements_per_chunk;
 
     int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
+	//int flag = 0;
     for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
 
         //inside batch0
@@ -132,6 +133,7 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
 							int column = (16*i)+(8*j)+(4*k)+(2*l)+m;
 							for(int row = 0; row < MAT_DIM; row++) {
 								result[row] = result[row] + (operator_matrix[row][column]*val);
+								//result[row] = result[row] + (val*C(1.0f,0.0f));
 							}
 						}//m
 					}//l
@@ -151,8 +153,14 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
 							int row = (16*i)+(8*j)+(4*k)+(2*l)+m;
 							if(element_id < vec_size) {
 								vec[element_id] = result[row];
-								//vec[element_id] = C((float)element_id, (float)offset);
+								//vec[element_id] = C((float)element_id, cuCrealf(result[row]));
 							}
+							/*
+							else if (flag != 1){
+								vec[0] = C((float)element_id, cuCrealf(result[row]));
+								flag = 1;
+							}
+							*/
 						}//m
 					}//l
 				}//k
@@ -183,10 +191,18 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
 	//A chunk can't be larger than a batch by definition
     int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
+	//CRK: Full blocks are allocating too many resources (not enough registers per block), so I'm nerfing it
+	if (chunk_size > 256) {
+		chunk_size = 256;
+	}
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
 	int max_grid_size = deviceProp.maxGridSize[0];
     dim3 gridDim(std::min(max_grid_size, (int) ceil(vec_size/(float)chunk_size)));
+
+	size_t max_const_mem = deviceProp.totalConstMem;
+
+	int max_reg_per_block = deviceProp.regsPerBlock;
 
     //print some stats about the GPU
     std::cout << "smem_size_in_elems: " << smem_size_in_elems << std::endl;
@@ -194,6 +210,8 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
     std::cout << "batch size: " << batch_size << std::endl;;
     std::cout << "chunk size: " << chunk_size << std::endl;;
     std::cout << "max grid size: " << max_grid_size << std::endl;;
+	std::cout << "const mem on device: " << max_const_mem << std::endl;
+	std::cout << "max registers per block: " << max_reg_per_block << std::endl;
 
 	std::cout << "Vec size (num vectors is log2): " << vec_size << std::endl;
 	std::cout << "quid0: " << quid0 << std::endl;
@@ -209,11 +227,16 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 	start = std::chrono::high_resolution_clock::now();
 
     complex *d_vec;
-    cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
+    cudaError_t malloc_error = cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
+	std::cout << "Malloc error is: " << malloc_error << std::endl;
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
 	std::cout << "Copying to device error is: " << cpy_error << std::endl;
     five_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, quid3, quid4, chunk_size);
     cudaDeviceSynchronize();
+	cudaError_t err = cudaGetLastError();
+	if (err != cudaSuccess) {
+		std::cout << "Kernel failed with error: " << cudaGetErrorString(err) << std::endl;
+	}
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
 	std::cout << "Copying to host error is: " << cpy_error << std::endl;
     cudaFree(d_vec);
@@ -245,7 +268,6 @@ int main(int argc, char **argv) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
-    state_vec.push_back(temp);
 	if (fin.rdstate() == std::ios_base::failbit) {
 		std::cout << "Ifstream failed with failbit" << std::endl;
 	}
@@ -255,10 +277,10 @@ int main(int argc, char **argv) {
 	else if (fin.rdstate() == std::ios_base::badbit) {
 		std::cout << "Ifstream failed with badbit" << std::endl;
 	}
-	std::cout << "Vector size: " << state_vec.size() << std::endl;
+    unsigned long state_vec_size = state_vec.size();
+	std::cout << "Vector size: " << state_vec_size << std::endl;
     fin.close();
 
-    unsigned long state_vec_size = state_vec.size();
 
 
     std::vector<complex> source_matrix_vec;
@@ -266,8 +288,8 @@ int main(int argc, char **argv) {
     fin.open(MAT_FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
-        source_matrix_vec.push_back(temp);
 		std::cout << temp << std::endl;
+		source_matrix_vec.push_back(temp);
     }
 	if (fin.rdstate() == std::ios_base::failbit) {
 		std::cout << "Ifstream failed with failbit" << std::endl;
@@ -278,12 +300,12 @@ int main(int argc, char **argv) {
 	else if (fin.rdstate() == std::ios_base::badbit) {
 		std::cout << "Ifstream failed with badbit" << std::endl;
 	}
-    source_matrix_vec.push_back(temp);
     fin.close();
 
     //Apply gate
     //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+    cudaError_t symbol_error = cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+	std::cout << "Error from symbol copy is: " << symbol_error << std::endl;
 
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, quid2, quid3, quid4, source_matrix_vec.data());
 

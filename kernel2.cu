@@ -213,7 +213,6 @@ int main(int argc, char **argv) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
-    state_vec.push_back(temp);
 	if (fin.rdstate() == std::ios_base::failbit) {
 		std::cout << "Ifstream failed with failbit" << std::endl;
 	}
@@ -246,7 +245,6 @@ int main(int argc, char **argv) {
 	else if (fin.rdstate() == std::ios_base::badbit) {
 		std::cout << "Ifstream failed with badbit" << std::endl;
 	}
-    source_matrix_vec.push_back(temp);
     fin.close();
 
     //Apply gate
