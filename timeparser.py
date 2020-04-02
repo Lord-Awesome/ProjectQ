@@ -6,6 +6,10 @@ import os
 def get_data(infile):
     count = 0
     data = []
+
+    if not os.path.isfile(infile):
+        raise Exception('input file ' + infile + ' does not exist')
+
     with open(infile, 'r') as f:
         for line in f:
             count += 1
@@ -39,7 +43,7 @@ def get_data(infile):
     return data
             
 def plot_gpu_speedup_vs_vec_size_line():
-    data = get_data('graph_data_state_vec_size.txt')
+    data = get_data('data/graph_data_state_vec_size.txt')
     qs = []
     nointrin_speedup = []
     intrin_speedup = []
@@ -49,24 +53,34 @@ def plot_gpu_speedup_vs_vec_size_line():
         nointrin_speedup.append(d['nointrin']/d['gpu']) #speedup is inverse of time
         intrin_speedup.append(d['intrin']/d['gpu']) #speedup is inverse of time
 
+    #Plot figure
+    fig = plt.figure()
     plt.plot(qs, intrin_speedup, 'b', label='relative to intrin')
 
+    #Apply linear regression and plot if r2 is sufficiently good
     m,b,r_val,p_val,std_err = stats.linregress(np.array(qs, dtype=float), np.array(intrin_speedup, dtype=float))
     if(r_val > 0.98):
         plt.plot(qs, m*np.array(qs, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
 
+    #Add titles and labels
     plt.title('gpu speedup vs vector size')
     plt.xlabel('vector size (2^n)', fontweight='bold')
     plt.ylabel('speedup', fontweight='bold')
-
     plt.legend()
-    plt.savefig('plots/gpu_speedup_vs_state_vector_size.png')
-    plt.show()
+
+    #save plot
+    save_filename = 'plots/gpu_speedup_vs_state_vector_size.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
 
 def plot_time_vs_vec_size_bar():
-    data = get_data('graph_data_state_vec_size.txt')
+    data = get_data('data/graph_data_state_vec_size.txt')
     qs = []
+    gpu_time = []
+    intrin_time = []
+    nointrin_time = []
     for d in data:
         qs.append(d['num_qubits'])
         gpu_time.append(d['gpu'])
@@ -87,19 +101,22 @@ def plot_time_vs_vec_size_bar():
     r3 = [x + barWidth for x in r2]
     
     # Make the plot
-    plt.bar(r1, bars1, color='#FFFFFF', width=barWidth, edgecolor='white', label='gpu')
-    plt.bar(r2, bars2, color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
-    plt.bar(r3, bars3, color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
+    fig = plt.figure()
+    plt.bar(r1, [x / 1e9 for x in bars1], color='#000000', width=barWidth, edgecolor='white', label='gpu')
+    plt.bar(r2, [x / 1e9 for x in bars2], color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
+    plt.bar(r3, [x / 1e9 for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
     
-    # Add xticks on the middle of the group bars
+    # Add xticks on the middle of the group bars and show legend
     plt.xlabel('number of qubits', fontweight='bold')
     plt.ylabel('time (ns)', fontweight='bold')
     plt.xticks([r + barWidth for r in range(len(bars1))], qs)
-    
-    # Create legend & Show graphic
     plt.legend()
-    plt.savefig('plots/time_vs_state_vector_size.png')
-    plt.show()
+    
+    # Save
+    save_filename = 'plots/time_vs_state_vector_size.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
 
 
 #operator_size.append(len(d['qids_list']))
@@ -154,8 +171,12 @@ def main():
         os.makedirs('plots')
 
     #Will be reading from data directory. Make sure it exists.
-    if not os.path.isdir('data')
+    if not os.path.isdir('data'):
         raise Exception('Please create data folder and fill it with the data you want parsed.')
 
     #Analysis of the effect of vector size
     plot_gpu_speedup_vs_vec_size_line()
+    plot_time_vs_vec_size_bar()
+
+if __name__ == "__main__":
+    main()
