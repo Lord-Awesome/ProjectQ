@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	auto stop = std::chrono::high_resolution_clock::now();
 
 	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-	std::cout << "Intrin baseline time: " << duration.count() << std::endl;
+	//std::cout << "Intrin baseline time: " << duration.count() << std::endl;
 
 	std::ofstream f_time;
 	f_time.open("time_comparison.txt", std::ios_base::app);

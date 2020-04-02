@@ -1,0 +1,102 @@
+NUM_QUBITS: 3 QUBIT2: 2 QUBIT1: 1 QUBIT0: 0
+No intrin baseline time: 23651
+Intrin baseline time: 18263
+GPU time: 1499786
+NUM_QUBITS: 4 QUBIT2: 3 QUBIT1: 2 QUBIT0: 1
+No intrin baseline time: 26976
+Intrin baseline time: 18496
+GPU time: 395781
+NUM_QUBITS: 5 QUBIT2: 4 QUBIT1: 3 QUBIT0: 2
+No intrin baseline time: 38362
+Intrin baseline time: 19745
+GPU time: 384234
+NUM_QUBITS: 6 QUBIT2: 5 QUBIT1: 4 QUBIT0: 3
+No intrin baseline time: 48515
+Intrin baseline time: 25181
+GPU time: 384306
+NUM_QUBITS: 7 QUBIT2: 6 QUBIT1: 5 QUBIT0: 4
+No intrin baseline time: 75875
+Intrin baseline time: 27301
+GPU time: 389925
+NUM_QUBITS: 8 QUBIT2: 7 QUBIT1: 6 QUBIT0: 5
+No intrin baseline time: 133733
+Intrin baseline time: 36422
+GPU time: 385269
+NUM_QUBITS: 9 QUBIT2: 8 QUBIT1: 7 QUBIT0: 6
+No intrin baseline time: 244390
+Intrin baseline time: 47253
+GPU time: 390770
+NUM_QUBITS: 10 QUBIT2: 9 QUBIT1: 8 QUBIT0: 7
+No intrin baseline time: 471825
+Intrin baseline time: 74040
+GPU time: 395878
+NUM_QUBITS: 11 QUBIT2: 10 QUBIT1: 9 QUBIT0: 8
+No intrin baseline time: 927167
+Intrin baseline time: 128906
+GPU time: 393365
+NUM_QUBITS: 12 QUBIT2: 11 QUBIT1: 10 QUBIT0: 9
+No intrin baseline time: 1828998
+Intrin baseline time: 232700
+GPU time: 418553
+NUM_QUBITS: 13 QUBIT2: 12 QUBIT1: 11 QUBIT0: 10
+No intrin baseline time: 3632964
+Intrin baseline time: 454246
+GPU time: 443926
+NUM_QUBITS: 14 QUBIT2: 13 QUBIT1: 12 QUBIT0: 11
+No intrin baseline time: 7223597
+Intrin baseline time: 858283
+GPU time: 458362
+NUM_QUBITS: 15 QUBIT2: 14 QUBIT1: 13 QUBIT0: 12
+No intrin baseline time: 14515801
+Intrin baseline time: 1715074
+GPU time: 508179
+NUM_QUBITS: 16 QUBIT2: 15 QUBIT1: 14 QUBIT0: 13
+No intrin baseline time: 28835145
+Intrin baseline time: 3406778
+GPU time: 675005
+NUM_QUBITS: 17 QUBIT2: 16 QUBIT1: 15 QUBIT0: 14
+No intrin baseline time: 57643705
+Intrin baseline time: 6779388
+GPU time: 955537
+NUM_QUBITS: 18 QUBIT2: 17 QUBIT1: 16 QUBIT0: 15
+No intrin baseline time: 115641602
+Intrin baseline time: 13584934
+GPU time: 1398598
+NUM_QUBITS: 19 QUBIT2: 18 QUBIT1: 17 QUBIT0: 16
+No intrin baseline time: 230646455
+Intrin baseline time: 27051950
+GPU time: 2266015
+NUM_QUBITS: 20 QUBIT2: 19 QUBIT1: 18 QUBIT0: 17
+No intrin baseline time: 462556706
+Intrin baseline time: 54179754
+GPU time: 3967283
+NUM_QUBITS: 21 QUBIT2: 20 QUBIT1: 19 QUBIT0: 18
+No intrin baseline time: 927012828
+Intrin baseline time: 108527187
+GPU time: 7396184
+NUM_QUBITS: 22 QUBIT2: 21 QUBIT1: 20 QUBIT0: 19
+No intrin baseline time: 1863555581
+Intrin baseline time: 272527242
+GPU time: 22476547
+NUM_QUBITS: 23 QUBIT2: 22 QUBIT1: 21 QUBIT0: 20
+No intrin baseline time: 3730784178
+Intrin baseline time: 461390492
+GPU time: 43823218
+NUM_QUBITS: 24 QUBIT2: 23 QUBIT1: 22 QUBIT0: 21
+No intrin baseline time: 7441358847
+Intrin baseline time: 942016823
+GPU time: 83622687
+NUM_QUBITS: 25 QUBIT2: 24 QUBIT1: 23 QUBIT0: 22
+No intrin baseline time: 14924764275
+Intrin baseline time: 1883140340
+GPU time: 159046680
+NUM_QUBITS: 26 QUBIT2: 25 QUBIT1: 24 QUBIT0: 23
+No intrin baseline time: 29846790796
+Intrin baseline time: 3637119629
+GPU time: 365341178
+NUM_QUBITS: 27 QUBIT2: 26 QUBIT1: 25 QUBIT0: 24
+No intrin baseline time: 59634295176
+Intrin baseline time: 7402621397
+NUM_QUBITS: 28 QUBIT2: 27 QUBIT1: 26 QUBIT0: 25
+No intrin baseline time: 119862427113
+Intrin baseline time: 14651403779
