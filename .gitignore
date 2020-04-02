@@ -8,3 +8,5 @@ var/
 *.txt*
 *.o
 slurm*
+
+!data/*

@@ -1,0 +1,16 @@
+NUM_QUBITS: 22 QUBIT0: 17
+No intrin baseline time: 287695993
+Intrin baseline time: 94815893
+GPU time: 20964630
+NUM_QUBITS: 22 QUBIT1: 18 QUBIT0: 17
+No intrin baseline time: 593789489
+Intrin baseline time: 132769212
+GPU time: 21417507
+NUM_QUBITS: 22 QUBIT2: 19 QUBIT1: 18 QUBIT0: 17
+No intrin baseline time: 1252449121
+Intrin baseline time: 229266422
+GPU time: 21043641
+NUM_QUBITS: 22 QUBIT3: 20 QUBIT2: 19 QUBIT1: 18 QUBIT0: 17
+No intrin baseline time: 2503061332
+Intrin baseline time: 406512824
+GPU time: 21974669

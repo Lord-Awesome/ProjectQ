@@ -46,5 +46,5 @@ do
 	#echo "\n\n---------- Comparing output ----------\n\n"
 	~/Python-3.8.1/python3.8 compare_outputs.py
 
-	cp time_comparison.txt graph_data_state_vec_size.txt
+	cp time_comparison.txt ./data/graph_data_state_vec_size.txt
 done
