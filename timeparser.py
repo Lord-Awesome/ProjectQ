@@ -118,9 +118,45 @@ def plot_time_vs_vec_size_bar():
     plt.close(fig)
     print("Generated " + save_filename)
 
+def plot_gpu_speedup_vs_operator_size_line():
+    data = []
+    operator_size = []
+    nointrin_speedup = []
+    intrin_speedup = []
 
-#operator_size.append(len(d['qids_list']))
+    #Split data into lists to plot
+    data = get_data('data/graph_data_operator_size.txt')
+    for d in data:
+        operator_size.append(len(d['qids_list']))
+        nointrin_speedup.append(d['nointrin']/d['gpu']) #speedup is inverse of time
+        intrin_speedup.append(d['intrin']/d['gpu']) #speedup is inverse of time
 
+    #Plot figure
+    fig = plt.figure()
+    plt.plot(operator_size, intrin_speedup, 'b', label='relative to intrin')
+
+    #Apply linear regression and plot if r2 is sufficiently good
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(operator_size, dtype=float), np.array(intrin_speedup, dtype=float))
+    if(r_val > 0.98):
+        plt.plot(operator_size, m*np.array(operator_size, dtype=float)+b, '--k', label='linear interpolation')
+        print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
+
+    #Add titles and labels
+    plt.title('gpu speedup vs number of qubits operated on')
+    plt.xticks(operator_size)
+    plt.xlabel('qubits operated on', fontweight='bold')
+    plt.ylabel('speedup', fontweight='bold')
+    plt.legend()
+
+    #save plot
+    save_filename = 'plots/gpu_speedup_vs_operator_size.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
+
+
+#OLD CODE SNIPPETS
+#------------------------------------------------
 #print('num_qubits: ' + d['num_qubits'] + ' speedup over nointrin: ' + str(d['nointrin']/d['gpu']) + ' speedup over intrin: ' + str(d['intrin']/d['gpu']))
 
 
@@ -164,6 +200,8 @@ def plot_time_vs_vec_size_bar():
 # plt.legend()
 # plt.savefig("test2.png")
 # plt.show()
+#------------------------------------------------
+#END OLD CODE SNIPPETS
 
 def main():
     #Will be writing to plots directory. Make sure it exists
@@ -177,6 +215,9 @@ def main():
     #Analysis of the effect of vector size
     plot_gpu_speedup_vs_vec_size_line()
     plot_time_vs_vec_size_bar()
+
+    #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
+    plot_gpu_speedup_vs_operator_size_line()
 
 if __name__ == "__main__":
     main()
