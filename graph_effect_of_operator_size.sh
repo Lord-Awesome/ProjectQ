@@ -1,7 +1,7 @@
 NUM_QUBITS=22
 
 MIN_NUM_QUBIT_IDS=1
-MAX_NUM_QUBIT_IDS=4
+MAX_NUM_QUBIT_IDS=5
 
 #echo "\n\n---------- Removing time_comparison.txt ----------\n\n"
 rm time_comparison.txt

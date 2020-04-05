@@ -95,8 +95,10 @@ No intrin baseline time: 29783395658
 Intrin baseline time: 3623597500
 GPU time: 364377010
 NUM_QUBITS: 27 QUBIT2: 26 QUBIT1: 25 QUBIT0: 24
-No intrin baseline time: 59743460120
-Intrin baseline time: 7539224400
+No intrin baseline time: 59610140678
+Intrin baseline time: 7319822960
+GPU time: 602139613
 NUM_QUBITS: 28 QUBIT2: 27 QUBIT1: 26 QUBIT0: 25
-No intrin baseline time: 121165858591
-Intrin baseline time: 14665488392
+No intrin baseline time: 119642829692
+Intrin baseline time: 14686400112
+GPU time: 1365102483

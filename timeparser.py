@@ -1,7 +1,11 @@
+from statistics import mean
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 import os
+
+
+NUM_ITER = 5
 
 def get_data(infile):
     count = 0
@@ -43,22 +47,30 @@ def get_data(infile):
     return data
             
 def plot_gpu_speedup_vs_vec_size_line():
-    data = get_data('data/graph_data_state_vec_size.txt')
-    qs = []
     nointrin_speedup = []
     intrin_speedup = []
+    for iter in range(NUM_ITER):
+        nointrin_speedup.append([]);
+        intrin_speedup.append([]);
+        data = get_data('data/iterations/graph_data_state_vec_size_iter_'+str(iter)+'.txt')
+        qs = []
 
-    for d in data:
-        qs.append(d['num_qubits'])
-        nointrin_speedup.append(d['nointrin']/d['gpu']) #speedup is inverse of time
-        intrin_speedup.append(d['intrin']/d['gpu']) #speedup is inverse of time
+        for d in data:
+            qs.append(d['num_qubits'])
+            nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
+            intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
+
+    #final_nointrin_speedup = (*map(mean,zip(*nointrin_speedup)))
+    #final_intrin_speedup = (*map(mean,zip(*intrin_speedup)))
+    final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    final_intrin_speedup = np.mean(intrin_speedup, axis=0)
 
     #Plot figure
     fig = plt.figure()
-    plt.plot(qs, intrin_speedup, 'b', label='relative to intrin')
+    plt.plot(qs, final_intrin_speedup, 'b', label='relative to intrin')
 
     #Apply linear regression and plot if r2 is sufficiently good
-    m,b,r_val,p_val,std_err = stats.linregress(np.array(qs, dtype=float), np.array(intrin_speedup, dtype=float))
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(qs, dtype=float), np.array(final_intrin_speedup, dtype=float))
     if(r_val > 0.98):
         plt.plot(qs, m*np.array(qs, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
@@ -76,24 +88,34 @@ def plot_gpu_speedup_vs_vec_size_line():
     print("Generated " + save_filename)
 
 def plot_time_vs_vec_size_bar():
-    data = get_data('data/graph_data_state_vec_size.txt')
-    qs = []
-    gpu_time = []
+
     intrin_time = []
     nointrin_time = []
-    for d in data:
-        qs.append(d['num_qubits'])
-        gpu_time.append(d['gpu'])
-        intrin_time.append(d['intrin'])
-        nointrin_time.append(d['nointrin'])
+    for iter in range(NUM_ITER):
+        nointrin_time.append([]);
+        intrin_time.append([]);
+        data = get_data('data/iterations/graph_data_state_vec_size_iter_'+str(iter)+'.txt')
+        qs = []
+        final_gpu_time = []
+        for d in data:
+            qs.append(d['num_qubits'])
+            final_gpu_time.append(d['gpu'])
+            intrin_time[-1].append(d['intrin'])
+            nointrin_time[-1].append(d['nointrin'])
+    
+    final_nointrin_time = np.mean(nointrin_time, axis=0)
+    final_intrin_time = np.mean(intrin_time, axis=0)
+    final_gpu_time = np.log(final_gpu_time)
+    final_nointrin_time = np.log(final_nointrin_time)
+    final_intrin_time = np.log(final_intrin_time)
 
     # set width of bar
     barWidth = 0.25
     
     # set height of bar
-    bars1 = gpu_time
-    bars2 = intrin_time
-    bars3 = nointrin_time
+    bars1 = final_gpu_time
+    bars2 = final_intrin_time
+    bars3 = final_nointrin_time
     
     # Set position of bar on X axis
     r1 = np.arange(len(bars1))
@@ -107,8 +129,9 @@ def plot_time_vs_vec_size_bar():
     plt.bar(r3, [x / 1e9 for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
     
     # Add xticks on the middle of the group bars and show legend
+    plt.title('Log scale of time vs size of state vector')
     plt.xlabel('number of qubits', fontweight='bold')
-    plt.ylabel('time (ns)', fontweight='bold')
+    plt.ylabel('log time (ns)', fontweight='bold')
     plt.xticks([r + barWidth for r in range(len(bars1))], qs)
     plt.legend()
     
@@ -119,24 +142,33 @@ def plot_time_vs_vec_size_bar():
     print("Generated " + save_filename)
 
 def plot_gpu_speedup_vs_operator_size_line():
+
+
     data = []
-    operator_size = []
     nointrin_speedup = []
     intrin_speedup = []
 
-    #Split data into lists to plot
-    data = get_data('data/graph_data_operator_size.txt')
-    for d in data:
-        operator_size.append(len(d['qids_list']))
-        nointrin_speedup.append(d['nointrin']/d['gpu']) #speedup is inverse of time
-        intrin_speedup.append(d['intrin']/d['gpu']) #speedup is inverse of time
+    for iter in range(NUM_ITER):
+        nointrin_speedup.append([]);
+        intrin_speedup.append([]);
+        operator_size = []
+
+        #Split data into lists to plot
+        data = get_data('data/iterations/graph_data_operator_size_iter_'+str(iter)+'.txt')
+        for d in data:
+            operator_size.append(len(d['qids_list']))
+            nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
+            intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
+
+    final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    final_intrin_speedup = np.mean(intrin_speedup, axis=0)
 
     #Plot figure
     fig = plt.figure()
-    plt.plot(operator_size, intrin_speedup, 'b', label='relative to intrin')
+    plt.plot(operator_size, final_intrin_speedup, 'b', label='relative to intrin')
 
     #Apply linear regression and plot if r2 is sufficiently good
-    m,b,r_val,p_val,std_err = stats.linregress(np.array(operator_size, dtype=float), np.array(intrin_speedup, dtype=float))
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(operator_size, dtype=float), np.array(final_intrin_speedup, dtype=float))
     if(r_val > 0.98):
         plt.plot(operator_size, m*np.array(operator_size, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
