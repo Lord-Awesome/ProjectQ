@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=1000m 
+#SBATCH --mem=2500m
 #SBATCH --time=10:00
 #SBATCH --account=eecs570w20_class
 #SBATCH --partition=gpu
