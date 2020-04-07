@@ -67,21 +67,28 @@ def plot_gpu_speedup_vs_vec_size_line():
     final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
     final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
 
-    #Plot figure
-    fig = plt.figure()
-    plt.plot(qs, final_intrin_speedup, 'b', label='relative to intrin')
+    #Create figure
+    fig, ax1 = plt.subplots()
+
+    #Add titles and labels
+    plt.title('gpu speedup vs vector size')
+    plt.xlabel('vector size (2^n)', fontweight='bold')
+    plt.ylabel('speedup', fontweight='bold')
+
+    #Plot
+    ax2 = ax1.twinx()
+    ax1.plot(qs, final_intrin_speedup, 'b', label='relative to intrin')
+    ax1.tick_params(axis='y', labelcolor='b')
+    ax2.plot(qs, final_nointrin_speedup, 'r', label='relative to nointrin')
+    ax2.tick_params(axis='y', labelcolor='r')
+    ax1.legend(loc='lower left')
+    ax2.legend(loc='lower right')
 
     #Apply linear regression and plot if r2 is sufficiently good
     m,b,r_val,p_val,std_err = stats.linregress(np.array(qs, dtype=float), np.array(final_intrin_speedup, dtype=float))
     if(r_val > 0.98):
         plt.plot(qs, m*np.array(qs, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
-
-    #Add titles and labels
-    plt.title('gpu speedup vs vector size')
-    plt.xlabel('vector size (2^n)', fontweight='bold')
-    plt.ylabel('speedup', fontweight='bold')
-    plt.legend()
 
     #save plot
     save_filename = 'plots/gpu_speedup_vs_state_vector_size.png'
@@ -169,9 +176,23 @@ def plot_gpu_speedup_vs_operator_size_line():
     final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
     final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
 
-    #Plot figure
-    fig = plt.figure()
-    plt.plot(operator_size, final_intrin_speedup, 'b', label='relative to intrin')
+    #Create figure
+    fig, ax1 = plt.subplots()
+
+    #Add titles and labels
+    plt.title('gpu speedup vs number of qubits operated on')
+    plt.xticks(operator_size)
+    plt.xlabel('qubits operated on', fontweight='bold')
+    plt.ylabel('speedup', fontweight='bold')
+
+    #Plot
+    ax2 = ax1.twinx()
+    ax1.plot(operator_size, final_intrin_speedup, 'b', label='relative to intrin')
+    ax1.tick_params(axis='y', labelcolor='b')
+    ax2.plot(operator_size, final_nointrin_speedup, 'r', label='relative to nointrin')
+    ax2.tick_params(axis='y', labelcolor='r')
+    ax1.legend(loc='lower left')
+    ax2.legend(loc='lower right')
 
     #Apply linear regression and plot if r2 is sufficiently good
     m,b,r_val,p_val,std_err = stats.linregress(np.array(operator_size, dtype=float), np.array(final_intrin_speedup, dtype=float))
@@ -179,20 +200,121 @@ def plot_gpu_speedup_vs_operator_size_line():
         plt.plot(operator_size, m*np.array(operator_size, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
 
-    #Add titles and labels
-    plt.title('gpu speedup vs number of qubits operated on')
-    plt.xticks(operator_size)
-    plt.xlabel('qubits operated on', fontweight='bold')
-    plt.ylabel('speedup', fontweight='bold')
-    plt.legend()
-
     #save plot
     save_filename = 'plots/gpu_speedup_vs_operator_size.png'
     plt.savefig(save_filename)
     plt.close(fig)
     print("Generated " + save_filename)
 
+def plot_gpu_speedup_vs_qubit_magnitude_line():
 
+
+    data = []
+    nointrin_speedup = []
+    intrin_speedup = []
+
+    for iter in range(NUM_ITER):
+        nointrin_speedup.append([]);
+        intrin_speedup.append([]);
+        lowest_qubit = []
+
+        #Split data into lists to plot
+        data = get_data('data/iterations/graph_data_qubitid_magnitude_iter_'+str(iter)+'.txt')
+        for d in data:
+            lowest_qubit.append((d['qids_list'][0]))
+            nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
+            intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
+
+    #final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    #final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
+    final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
+
+    #Create figure
+    fig, ax1 = plt.subplots()
+
+    #Add titles and labels
+    plt.title('gpu speedup vs magnitude of 5 consecutive qubits')
+    plt.xticks(lowest_qubit)
+    plt.xlabel('magnitude of lowest qubit id', fontweight='bold')
+    plt.ylabel('speedup', fontweight='bold')
+    
+    #Plot
+    ax2 = ax1.twinx()
+    ax1.plot(lowest_qubit, final_intrin_speedup, 'b', label='relative to intrin')
+    ax1.tick_params(axis='y', labelcolor='b')
+    ax2.plot(lowest_qubit, final_nointrin_speedup, 'r', label='relative to nointrin')
+    ax2.tick_params(axis='y', labelcolor='r')
+    ax1.legend(loc='lower left')
+    ax2.legend(loc='lower right')
+
+    #Apply linear regression and plot if r2 is sufficiently good
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(lowest_qubit, dtype=float), np.array(final_intrin_speedup, dtype=float))
+    if(r_val > 0.98):
+        plt.plot(lowest_qubit, m*np.array(lowest_qubit, dtype=float)+b, '--k', label='linear interpolation')
+        print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
+
+
+    #save plot
+    save_filename = 'plots/gpu_speedup_vs_qubit_magnitude.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
+
+def plot_gpu_speedup_vs_qubit_spacing():
+
+
+    data = []
+    nointrin_speedup = []
+    intrin_speedup = []
+
+    for iter in range(NUM_ITER):
+        nointrin_speedup.append([]);
+        intrin_speedup.append([]);
+        spacing = []
+
+        #Split data into lists to plot
+        data = get_data('data/iterations/graph_data_qubitid_spacing_iter_'+str(iter)+'.txt')
+        for d in data:
+            spacing.append((d['qids_list'][1]) - d['qids_list'][0])
+            nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
+            intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
+
+    #final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    #final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
+    final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
+
+    #Create figure
+    fig, ax1 = plt.subplots()
+
+    #Add titles and labels
+    plt.title('gpu speedup vs spacing between 2 qubits for 20-qubit state vector')
+    plt.xticks(spacing)
+    plt.xlabel('spacing between two qubits with highest at qubit 19', fontweight='bold')
+    plt.ylabel('speedup', fontweight='bold')
+
+    #Plot
+    ax2 = ax1.twinx()
+    ax1.plot(spacing, final_intrin_speedup, 'b', label='relative to intrin')
+    ax1.tick_params(axis='y', labelcolor='b')
+    ax2.plot(spacing, final_nointrin_speedup, 'r', label='relative to nointrin')
+    ax2.tick_params(axis='y', labelcolor='r')
+    ax1.legend(loc='lower left')
+    ax2.legend(loc='lower right')
+
+    #Apply linear regression and plot if r2 is sufficiently good
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(spacing, dtype=float), np.array(final_intrin_speedup, dtype=float))
+    if(r_val > 0.98):
+        plt.plot(spacing, m*np.array(spacing, dtype=float)+b, '--k', label='linear interpolation')
+        print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
+
+
+    #save plot
+    save_filename = 'plots/gpu_speedup_vs_qubit_spacing.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
 #OLD CODE SNIPPETS
 #------------------------------------------------
 #print('num_qubits: ' + d['num_qubits'] + ' speedup over nointrin: ' + str(d['nointrin']/d['gpu']) + ' speedup over intrin: ' + str(d['intrin']/d['gpu']))
@@ -256,6 +378,10 @@ def main():
 
     #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
     plot_gpu_speedup_vs_operator_size_line()
+
+    #Analysis of the effect of the magnitude of the qubit ids
+    plot_gpu_speedup_vs_qubit_magnitude_line()
+    plot_gpu_speedup_vs_qubit_spacing()
 
 if __name__ == "__main__":
     main()
