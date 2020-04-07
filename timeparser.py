@@ -62,8 +62,10 @@ def plot_gpu_speedup_vs_vec_size_line():
 
     #final_nointrin_speedup = (*map(mean,zip(*nointrin_speedup)))
     #final_intrin_speedup = (*map(mean,zip(*intrin_speedup)))
-    final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
-    final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    #final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    #final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
+    final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
 
     #Plot figure
     fig = plt.figure()
@@ -103,6 +105,8 @@ def plot_time_vs_vec_size_bar():
             intrin_time[-1].append(d['intrin'])
             nointrin_time[-1].append(d['nointrin'])
     
+    #final_nointrin_time = np.mean(nointrin_time, axis=0)
+    #final_intrin_time = np.mean(intrin_time, axis=0)
     final_nointrin_time = np.mean(nointrin_time, axis=0)
     final_intrin_time = np.mean(intrin_time, axis=0)
     final_gpu_time = np.log(final_gpu_time)
@@ -160,8 +164,10 @@ def plot_gpu_speedup_vs_operator_size_line():
             nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
             intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
 
-    final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
-    final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    #final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    #final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
+    final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
 
     #Plot figure
     fig = plt.figure()
