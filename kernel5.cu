@@ -246,24 +246,25 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 
 int main(int argc, char **argv) {
 
-	if (argc != 6) {
-		std::cout << "Input args wrong. Needs exactly five input args" << std::endl;
+	if (argc != 7) {
+		std::cout << "Input args wrong. Needs exactly six input args" << std::endl;
 		exit(1);
 	}
 
 
-	int quid0 = atoi(argv[1]);
-	int quid1 = atoi(argv[2]);
-	int quid2 = atoi(argv[3]);
-	int quid3 = atoi(argv[4]);
-	int quid4 = atoi(argv[5]);
+	int quid0 = atoi(argv[2]);
+	int quid1 = atoi(argv[3]);
+	int quid2 = atoi(argv[4]);
+	int quid3 = atoi(argv[5]);
+	int quid4 = atoi(argv[6]);
 
     //Read state vector
     std::vector<complex> state_vec;
     std::ifstream fin;
-    fin.open(FILENAME);
     complex temp;
 	std::complex<float> std_complex_temp;
+	/*
+    fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
@@ -277,10 +278,18 @@ int main(int argc, char **argv) {
 	else if (fin.rdstate() == std::ios_base::badbit) {
 		std::cout << "Ifstream failed with badbit" << std::endl;
 	}
-    unsigned long state_vec_size = state_vec.size();
 	std::cout << "Vector size: " << state_vec_size << std::endl;
     fin.close();
+	*/
+    for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
+        //Note: normalization ignored for now
+        float real = ((float) rand() / (float) (RAND_MAX));
+        float imag = ((float) rand() / (float) (RAND_MAX));
+        complex val = C(real, imag);
+		state_vec.push_back(val);
+    }
 
+    unsigned long state_vec_size = state_vec.size();
 
 
     std::vector<complex> source_matrix_vec;

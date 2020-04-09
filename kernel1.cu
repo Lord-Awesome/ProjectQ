@@ -196,21 +196,22 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
 
 int main(int argc, char **argv) {
 
-	if (argc != 2) {
-		std::cout << "Input args wrong. Needs exactly one input arg which is the kth qubit" << std::endl;
+	if (argc != 3) {
+		std::cout << "Input args wrong. Needs total number qubits and kth qubit" << std::endl;
 		exit(1);
 	}
 
 
-	int kth_qubit = atoi(argv[1]);
+	int kth_qubit = atoi(argv[2]);
     //int kth_qubit = 11;
 
     //Read state vector
     std::vector<complex> state_vec;
     std::ifstream fin;
-    fin.open(FILENAME);
     complex temp;
 	std::complex<float> std_complex_temp;
+	/*
+    fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
@@ -226,6 +227,15 @@ int main(int argc, char **argv) {
 	}
 	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
+
+	*/
+    for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
+        //Note: normalization ignored for now
+        float real = ((float) rand() / (float) (RAND_MAX));
+        float imag = ((float) rand() / (float) (RAND_MAX));
+        complex val = C(real, imag);
+		state_vec.push_back(val);
+    }
 
     unsigned long state_vec_size = state_vec.size();
 

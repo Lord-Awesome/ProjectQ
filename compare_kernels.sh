@@ -30,51 +30,51 @@ echo "\n\n---------- Generating truth ----------\n\n"
 
 if [ $NUM_QUBIT_IDS -eq 1 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT0 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT0 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 2 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 3 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 4 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
 if [ $NUM_QUBIT_IDS -eq 5 ]
 then
-	./projectq_kernel_nointrin_runner.o $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-	./projectq_kernel_intrin_runner.o $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
 
 echo "\n\n---------- Running job on GPU ----------\n\n"
 #--wait allows bash to wait for it to be done
 if [ $NUM_QUBIT_IDS -eq 1 ]
 then
-	sbatch --wait run_on_gpu.sh $NUM_QUBIT_IDS $QUBIT0
+	sbatch --wait run_on_gpu.sh $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0
 fi
 if [ $NUM_QUBIT_IDS -eq 2 ]
 then
-	sbatch --wait run_on_gpu.sh $NUM_QUBIT_IDS $QUBIT0 $QUBIT1
+	sbatch --wait run_on_gpu.sh $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0 $QUBIT1
 fi
 if [ $NUM_QUBIT_IDS -eq 3 ]
 then
-	sbatch --wait run_on_gpu.sh $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2
+	sbatch --wait run_on_gpu.sh $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2
 fi
 if [ $NUM_QUBIT_IDS -eq 4 ]
 then
-	sbatch --wait run_on_gpu.sh $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3
+	sbatch --wait run_on_gpu.sh $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3
 fi
 if [ $NUM_QUBIT_IDS -eq 5 ]
 then
-	sbatch --wait run_on_gpu.sh $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3 $QUBIT4
+	sbatch --wait run_on_gpu.sh $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT0 $QUBIT1 $QUBIT2 $QUBIT3 $QUBIT4
 fi
 
 #bash command
