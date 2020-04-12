@@ -7,7 +7,7 @@ import os
 
 NUM_ITER = 5
 
-def get_data(infile):
+def get_data_projectq(infile):
     count = 0
     data = []
 
@@ -45,7 +45,52 @@ def get_data(infile):
                 'gpu' : gpu
             })
     return data
+
+def get_data_quest(infile):
+    count = 0
+    data = []
+
+    if not os.path.isfile(infile):
+        raise Exception('input file ' + infile + ' does not exist')
+
+    with open(infile, 'r') as f:
+        for line in f:
+            count += 1
+    
+    if count % 2 != 0 or count == 0:
+        raise Exception('malformed input file')
+
+    with open(infile, 'r') as f: 
+        for _ in range(int(count / 2)):
+            qids_split = f.readline().split(' ')
+            num_qubits = None
+            qids_list = []
+            for i, qid in enumerate(qids_split):
+                if i % 2:
+                    if i == 1:
+                        num_qubits = qid
+                    else:
+                        qids_list.append(int(qid.replace('\n','')))
+            qids_list.sort()
             
+            quest_gpu = int(f.readline())
+
+            data.append({
+                'num_qubits' : num_qubits,
+                'qids_list' : qids_list,
+                'quest_gpu' : quest_gpu
+            })
+    return data
+
+def get_data(projectq_infile, quest_infile):
+    projectq = get_data(projectq_infile)
+    quest = get_data(quest_infile)
+    for d1 in projectq:
+        for d2 in quest:
+            if d1['num_qubits'] == d2['num_qubits'] and d1['qids_list'] == d2['qids_list']
+                d1['quest_gpu'] = d2['quest_gpu']
+    return projectq
+
 def plot_gpu_speedup_vs_vec_size_line():
     nointrin_speedup = []
     intrin_speedup = []
