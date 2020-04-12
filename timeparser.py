@@ -83,27 +83,36 @@ def get_data_quest(infile):
     return data
 
 def get_data(projectq_infile, quest_infile):
-    projectq = get_data(projectq_infile)
-    quest = get_data(quest_infile)
+    projectq = get_data_projectq(projectq_infile)
+    quest = get_data_quest(quest_infile)
     for d1 in projectq:
         for d2 in quest:
-            if d1['num_qubits'] == d2['num_qubits'] and d1['qids_list'] == d2['qids_list']
+            if d1['num_qubits'] == d2['num_qubits'] and d1['qids_list'] == d2['qids_list']:
                 d1['quest_gpu'] = d2['quest_gpu']
     return projectq
 
 def plot_gpu_speedup_vs_vec_size_line():
     nointrin_speedup = []
     intrin_speedup = []
+    quest_speedup = []
     for iter in range(NUM_ITER):
         nointrin_speedup.append([])
         intrin_speedup.append([])
-        data = get_data('data/iterations/graph_data_state_vec_size_iter_'+str(iter)+'.txt')
+        quest_speedup.append([])
+        data = get_data('data/iterations/graph_data_state_vec_size_iter_'+str(iter)+'.txt', 'data/quest_graph_data_state_vec_size.txt')
         qs = []
-
+        #print(data)
         for d in data:
+            if 'quest_gpu' not in d:
+                print(d)
+                continue
             qs.append(d['num_qubits'])
             nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
             intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
+            quest_speedup[-1].append(d['quest_gpu']/d['gpu'])
+
+
+
 
     #final_nointrin_speedup = (*map(mean,zip(*nointrin_speedup)))
     #final_intrin_speedup = (*map(mean,zip(*intrin_speedup)))
@@ -111,6 +120,7 @@ def plot_gpu_speedup_vs_vec_size_line():
     #final_intrin_speedup = np.mean(intrin_speedup, axis=0)
     final_nointrin_speedup = stats.hmean(nointrin_speedup, axis=0)
     final_intrin_speedup = stats.hmean(intrin_speedup, axis=0)
+    final_quest_speedup = stats.hmean(quest_speedup, axis=0)
 
     #Create figure
     fig, ax1 = plt.subplots()
@@ -124,7 +134,7 @@ def plot_gpu_speedup_vs_vec_size_line():
     ax2 = ax1.twinx()
     ax1.plot(qs, final_intrin_speedup, 'b', label='relative to intrin')
     ax1.tick_params(axis='y', labelcolor='b')
-    ax2.plot(qs, final_nointrin_speedup, 'r', label='relative to nointrin')
+    ax2.plot(qs, final_quest_speedup, 'r', label='relative to quest')
     ax2.tick_params(axis='y', labelcolor='r')
     ax1.legend(loc='lower left')
     ax2.legend(loc='lower right')
@@ -419,14 +429,14 @@ def main():
 
     #Analysis of the effect of vector size
     plot_gpu_speedup_vs_vec_size_line()
-    plot_time_vs_vec_size_bar()
+    # plot_time_vs_vec_size_bar()
 
-    #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
-    plot_gpu_speedup_vs_operator_size_line()
+    # #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
+    # plot_gpu_speedup_vs_operator_size_line()
 
-    #Analysis of the effect of the magnitude of the qubit ids
-    plot_gpu_speedup_vs_qubit_magnitude_line()
-    plot_gpu_speedup_vs_qubit_spacing()
+    # #Analysis of the effect of the magnitude of the qubit ids
+    # plot_gpu_speedup_vs_qubit_magnitude_line()
+    # plot_gpu_speedup_vs_qubit_spacing()
 
 if __name__ == "__main__":
     main()
