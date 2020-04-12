@@ -304,7 +304,7 @@ def plot_gpu_speedup_vs_qubit_magnitude_line():
     ax2.legend(loc='lower right')
 
     #Apply linear regression and plot if r2 is sufficiently good
-    m,b,r_val,p_val,std_err = stats.linregress(np.array(lowest_qubit, dtype=float), np.array(final_intrin_speedup, dtype=float))
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(lowest_qubit, dtype=float), np.array(final_intrin_speedup, dtype=float)) # pylint: disable=unused-variable
     if(r_val > 0.98):
         plt.plot(lowest_qubit, m*np.array(lowest_qubit, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
@@ -324,8 +324,8 @@ def plot_gpu_speedup_vs_qubit_spacing():
     intrin_speedup = []
 
     for iter in range(NUM_ITER):
-        nointrin_speedup.append([]);
-        intrin_speedup.append([]);
+        nointrin_speedup.append([])
+        intrin_speedup.append([])
         spacing = []
 
         #Split data into lists to plot
@@ -359,7 +359,7 @@ def plot_gpu_speedup_vs_qubit_spacing():
     ax2.legend(loc='lower right')
 
     #Apply linear regression and plot if r2 is sufficiently good
-    m,b,r_val,p_val,std_err = stats.linregress(np.array(spacing, dtype=float), np.array(final_intrin_speedup, dtype=float))
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(spacing, dtype=float), np.array(final_intrin_speedup, dtype=float)) # pylint: disable=unused-variable
     if(r_val > 0.98):
         plt.plot(spacing, m*np.array(spacing, dtype=float)+b, '--k', label='linear interpolation')
         print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
