@@ -97,48 +97,361 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
         //iteration dependent
 
         complex result[MAT_DIM];
-        for(int row = 0; row < MAT_DIM; row++) {
-            result[row] = C(0.0f, 0.0f);
-        }
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-				for (int k = 0; k < 2; k++) {
-					int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
-					int element_id = element_id_base + offset;
+        result[0] = C(0.0f, 0.0f);
+        result[1] = C(0.0f, 0.0f);
+        result[2] = C(0.0f, 0.0f);
+        result[3] = C(0.0f, 0.0f);
+        result[4] = C(0.0f, 0.0f);
+        result[5] = C(0.0f, 0.0f);
+        result[6] = C(0.0f, 0.0f);
+        result[7] = C(0.0f, 0.0f);
 
-					//load
-					complex val;
-					if(element_id < vec_size) {
-						val = vec[element_id];
-					}
-					else {
-						val = C(0.0f,0.0f);
-					}
+		int i, j, k;
 
-					//compute
-					int column = (4*i)+(2*j)+k;
-					for(int row = 0; row < MAT_DIM; row++) {
-						result[row] = result[row] + (operator_matrix[row][column]*val);
-					}
-				}//k
-            }//j
-        }//i
+		i = 0;
+		j = 0;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
 
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-				for (int k = 0; k < 2; k++) {
-					int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
-					int element_id = element_id_base + offset;
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
 
-					//store
-					int row = (4*i)+(2*j)+k;
-					if(element_id < vec_size) {
-						vec[element_id] = result[row];
-						//vec[element_id] = C((float)element_id_base,(float)offset);
-					}
-				}//k
-            }//j
-        }//i
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 0;
+		j = 0;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 0;
+		j = 1;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 0;
+		j = 1;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 1;
+		j = 0;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 1;
+		j = 0;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 1;
+		j = 1;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 1;
+		j = 1;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//load
+			complex val;
+			if(element_id < vec_size) {
+				val = vec[element_id];
+			}
+			else {
+				val = C(0.0f,0.0f);
+			}
+
+			//compute
+			int column = (4*i)+(2*j)+k;
+			result[0] = result[0] + (operator_matrix[0][column]*val);
+			result[1] = result[1] + (operator_matrix[1][column]*val);
+			result[2] = result[2] + (operator_matrix[2][column]*val);
+			result[3] = result[3] + (operator_matrix[3][column]*val);
+			result[4] = result[4] + (operator_matrix[4][column]*val);
+			result[5] = result[5] + (operator_matrix[5][column]*val);
+			result[6] = result[6] + (operator_matrix[6][column]*val);
+			result[7] = result[7] + (operator_matrix[7][column]*val);
+		}
+
+		i = 0;
+		j = 0;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 0;
+		j = 0;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 0;
+		j = 1;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 0;
+		j = 1;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 1;
+		j = 0;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 1;
+		j = 0;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 1;
+		j = 1;
+		k = 0;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
+		i = 1;
+		j = 1;
+		k = 1;
+		{
+			int offset = (i * (1 << qid2)) + (j * (1 << qid1)) + (k * (1 << qid0));
+			int element_id = element_id_base + offset;
+
+			//store
+			int row = (4*i)+(2*j)+k;
+			if(element_id < vec_size) {
+				vec[element_id] = result[row];
+				//vec[element_id] = C((float)element_id_base,(float)offset);
+			}
+		}
+
 
     }
 }
@@ -207,9 +520,12 @@ int main(int argc, char **argv) {
 	}
 
 
+	int vec_size_in = atoi(argv[1]);
 	int quid0 = atoi(argv[2]);
 	int quid1 = atoi(argv[3]);
 	int quid2 = atoi(argv[4]);
+
+	std::cout << "Quids: " << quid0 << " " << quid1 << " " << quid2 << std::endl;
 
     //Read state vector
     std::vector<complex> state_vec;
@@ -234,7 +550,7 @@ int main(int argc, char **argv) {
 	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
 	*/
-    for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
+    for (unsigned long i = 0; i < 1 << vec_size_in; i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
         float imag = ((float) rand() / (float) (RAND_MAX));

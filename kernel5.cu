@@ -59,113 +59,165 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
     //qid0 is smaller than qid1
 
     //Initialize shared memory
-    //extern __shared__ complex smem[];
+    __shared__ int smem[20];
 
-    int elements_per_thread = MAT_DIM; //4 quibit kernel
-    int working_set = elements_per_chunk;
-
-    int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
+    int blocks_in_state_vector = ceil(vec_size / (float) (MAT_DIM * blockDim.x));
 	//int flag = 0;
     for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
+		__syncthreads();
 
         //inside batch0
-        int blocks_per_batch0 = (1 << qid0) / working_set;
-        int batch0_stride = 2 * (1 << qid0);
+        //int blocks_per_batch0 = (1 << qid0) / elements_per_chunk;
+        smem[0] = (1 << qid0) / elements_per_chunk;
+        //int batch0_stride = 2 * (1 << qid0);
+        smem[1] = 2 * (1 << qid0);
 
         //inside batch1
-        int blocks_per_batch1 = (1 << qid1) / (2 * working_set);
-        int batch1_depth = (global_block_id % blocks_per_batch1);
-        int batch1_stride = 2 * (1 << qid1);
+        //int blocks_per_batch1 = (1 << qid1) / (2 * elements_per_chunk);
+        smem[2] = (1 << qid1) / (2 * elements_per_chunk);
+        //int batch1_depth = (global_block_id % smem[2]);
+        smem[3] = (global_block_id % smem[2]);
+        //int batch1_stride = 2 * (1 << qid1);
+        smem[4] = 2 * (1 << qid1);
 
 		//inside batch2
-		int blocks_per_batch2 = (1 << qid2) / (4 * working_set);
-		int batch2_depth = (global_block_id % blocks_per_batch2);
-		int batch2_stride = 2 * (1 << qid2);
+		//int blocks_per_batch2 = (1 << qid2) / (4 * elements_per_chunk);
+		smem[5] = (1 << qid2) / (4 * elements_per_chunk);
+		//int batch2_depth = (global_block_id % smem[5]);
+		smem[6] = (global_block_id % smem[5]);
+		//int batch2_stride = 2 * (1 << qid2);
+		smem[7] = 2 * (1 << qid2);
 
 		//inside batch3
-		int blocks_per_batch3 = (1 << qid3) / (8 * working_set);
-		int batch3_depth = (global_block_id % blocks_per_batch3);
-		int batch3_stride = 2 * (1 << qid3);
+		//int blocks_per_batch3 = (1 << qid3) / (8 * elements_per_chunk);
+		smem[8] = (1 << qid3) / (8 * elements_per_chunk);
+		//int batch3_depth = (global_block_id % smem[8]);
+		smem[9] = (global_block_id % smem[8]);
+		//int batch3_stride = 2 * (1 << qid3);
+		smem[10] = 2 * (1 << qid3);
 
 		//inside batch4
-		int blocks_per_batch4 = (1 << qid4) / (16 * working_set);
-		int batch4_depth = (global_block_id % blocks_per_batch4);
-		int batch4_stride = 2 * (1 << qid4);
+		//int blocks_per_batch4 = (1 << qid4) / (16 * elements_per_chunk);
+		smem[11] = (1 << qid4) / (16 * elements_per_chunk);
+		//int batch4_depth = (global_block_id % smem[11]);
+		smem[12] = (global_block_id % smem[11]);
+		//int batch4_stride = 2 * (1 << qid4);
+		smem[13] = 2 * (1 << qid4);
 
         //ids
-        int chunk_id = global_block_id % blocks_per_batch0;
-        int batch0_id = batch1_depth / blocks_per_batch0;
-        int batch1_id = batch2_depth / blocks_per_batch1;
-        int batch2_id = batch3_depth / blocks_per_batch2;
-        int batch3_id = batch4_depth / blocks_per_batch3;
-        int batch4_id = global_block_id / blocks_per_batch4;
+        //int chunk_id = global_block_id % smem[0];
+        smem[14] = global_block_id % smem[0];
+        //int batch0_id = smem[3] / smem[0];
+        smem[15] = smem[3] / smem[0];
+        //int batch1_id = smem[6] / smem[2];
+        smem[16] = smem[6] / smem[2];
+        //int batch2_id = smem[9] / smem[5];
+        smem[17] = smem[9] / smem[5];
+        //int batch3_id = smem[12] / smem[8];
+        smem[18] = smem[12] / smem[8];
+        //int batch4_id = global_block_id / smem[11];
+        smem[19] = global_block_id / smem[11];
 
         int element_id_base = 0;
         element_id_base += threadIdx.x;
-        element_id_base += chunk_id * working_set;
-        element_id_base += batch0_id * batch0_stride;
-        element_id_base += batch1_id * batch1_stride;
-        element_id_base += batch2_id * batch2_stride;
-        element_id_base += batch3_id * batch3_stride;
-        element_id_base += batch4_id * batch4_stride;
+        element_id_base += smem[14] * elements_per_chunk;
+        element_id_base += smem[15] * smem[1];
+        element_id_base += smem[16] * smem[4];
+        element_id_base += smem[17] * smem[7];
+        element_id_base += smem[18] * smem[10];
+        element_id_base += smem[19] * smem[13];
 
         //iteration dependent
 
-        complex result[MAT_DIM];
-        for(int row = 0; row < MAT_DIM; row++) {
-            result[row] = C(0.0f, 0.0f);
-        }
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-				for (int k = 0; k < 2; k++) {
-					for (int l = 0; l < 2; l++) {
-						for (int m = 0; m < 2; m++) {
-							int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));
-							int element_id = element_id_base + offset;
+#define compute(i,j,k,l,m)\
+		{\
+		int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));\
+		int element_id = element_id_base + offset;\
+		complex val = C(0.0f,0.0f);\
+		if(element_id < vec_size) val = vec[element_id];\
+		int column = (16*i)+(8*j)+(4*k)+(2*l)+m;\
+		for(int row = 0; row < MAT_DIM; row++) result[row] = result[row] + (operator_matrix[row][column]*val);\
+		}
 
-							//load
-							complex val = C(0.0f,0.0f);
-							if(element_id < vec_size) {
-								val = vec[element_id];
-							}
 
-							//compute
-							int column = (16*i)+(8*j)+(4*k)+(2*l)+m;
-							for(int row = 0; row < MAT_DIM; row++) {
-								result[row] = result[row] + (operator_matrix[row][column]*val);
-								//result[row] = result[row] + (val*C(1.0f,0.0f));
-							}
-						}//m
-					}//l
-				}//k
-            }//j
-        }//i
+        __shared__ complex result[MAT_DIM];
+        for(int row = 0; row < MAT_DIM; row++) result[row] = C(0.0f, 0.0f);
 
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-				for (int k = 0; k < 2; k++) {
-					for (int l = 0; l < 2; l++) {
-						for (int m = 0; m < 2; m++) {
-							int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));
-							int element_id = element_id_base + offset;
 
-							//store
-							int row = (16*i)+(8*j)+(4*k)+(2*l)+m;
-							if(element_id < vec_size) {
-								vec[element_id] = result[row];
-								//vec[element_id] = C((float)element_id, cuCrealf(result[row]));
-							}
-							/*
-							else if (flag != 1){
-								vec[0] = C((float)element_id, cuCrealf(result[row]));
-								flag = 1;
-							}
-							*/
-						}//m
-					}//l
-				}//k
-            }//j
-        }//i
+		compute(0,0,0,0,0);
+		compute(0,0,0,0,1);
+		compute(0,0,0,1,0);
+		compute(0,0,0,1,1);
+		compute(0,0,1,0,0);
+		compute(0,0,1,0,1);
+		compute(0,0,1,1,0);
+		compute(0,0,1,1,1);
+		compute(0,1,0,0,0);
+		compute(0,1,0,0,1);
+		compute(0,1,0,1,0);
+		compute(0,1,0,1,1);
+		compute(0,1,1,0,0);
+		compute(0,1,1,0,1);
+		compute(0,1,1,1,0);
+		compute(0,1,1,1,1);
+		compute(1,0,0,0,0);
+		compute(1,0,0,0,1);
+		compute(1,0,0,1,0);
+		compute(1,0,0,1,1);
+		compute(1,0,1,0,0);
+		compute(1,0,1,0,1);
+		compute(1,0,1,1,0);
+		compute(1,0,1,1,1);
+		compute(1,1,0,0,0);
+		compute(1,1,0,0,1);
+		compute(1,1,0,1,0);
+		compute(1,1,0,1,1);
+		compute(1,1,1,0,0);
+		compute(1,1,1,0,1);
+		compute(1,1,1,1,0);
+		compute(1,1,1,1,1);
+
+
+		#define store(i,j,k,l,m) \
+		{\
+		int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));\
+		int element_id = element_id_base + offset;\
+		int row = (16*i)+(8*j)+(4*k)+(2*l)+m;\
+		if(element_id < vec_size) vec[element_id] = result[row];\
+		}
+
+		store(0,0,0,0,0);
+		store(0,0,0,0,1);
+		store(0,0,0,1,0);
+		store(0,0,0,1,1);
+		store(0,0,1,0,0);
+		store(0,0,1,0,1);
+		store(0,0,1,1,0);
+		store(0,0,1,1,1);
+		store(0,1,0,0,0);
+		store(0,1,0,0,1);
+		store(0,1,0,1,0);
+		store(0,1,0,1,1);
+		store(0,1,1,0,0);
+		store(0,1,1,0,1);
+		store(0,1,1,1,0);
+		store(0,1,1,1,1);
+		store(1,0,0,0,0);
+		store(1,0,0,0,1);
+		store(1,0,0,1,0);
+		store(1,0,0,1,1);
+		store(1,0,1,0,0);
+		store(1,0,1,0,1);
+		store(1,0,1,1,0);
+		store(1,0,1,1,1);
+		store(1,1,0,0,0);
+		store(1,1,0,0,1);
+		store(1,1,0,1,0);
+		store(1,1,0,1,1);
+		store(1,1,1,0,0);
+		store(1,1,1,0,1);
+		store(1,1,1,1,0);
+		store(1,1,1,1,1);
 
     }
 }
@@ -192,8 +244,8 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 	//A chunk can't be larger than a batch by definition
     int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
 	//CRK: Full blocks are allocating too many resources (not enough registers per block), so I'm nerfing it
-	if (chunk_size > 256) {
-		chunk_size = 256;
+	if (chunk_size > 512) {
+		chunk_size = 512;
 	}
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
