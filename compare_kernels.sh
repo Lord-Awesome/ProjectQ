@@ -1,5 +1,5 @@
 NUM_QUBITS=22
-NUM_QUBIT_IDS=5
+NUM_QUBIT_IDS=1
 #Ascending IDs
 QUBIT0=17
 QUBIT1=18
@@ -24,7 +24,7 @@ nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
 nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
 
 echo "\n\n---------- Generating truth ----------\n\n"
-#./gen_state_vec.o $NUM_QUBITS || exit 1
+./gen_state_vec.o $NUM_QUBITS || exit 1
 #~/Python-3.8.1/python3.8 source_generate.py $NUM_QUBIT_IDS
 ./gen_source_matrix.o $NUM_QUBIT_IDS || exit 1
 
@@ -38,21 +38,21 @@ then
 	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
 	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT1 $QUBIT0 || exit 1
 fi
-#if [ $NUM_QUBIT_IDS -eq 3 ]
-#then
-	#./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-	#./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-#fi
+if [ $NUM_QUBIT_IDS -eq 3 ]
+then
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+fi
 if [ $NUM_QUBIT_IDS -eq 4 ]
 then
 	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
 fi
-#if [ $NUM_QUBIT_IDS -eq 5 ]
-#then
-#	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-#	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
-#fi
+if [ $NUM_QUBIT_IDS -eq 5 ]
+then
+	./projectq_kernel_nointrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+	./projectq_kernel_intrin_runner.o $NUM_QUBITS $NUM_QUBIT_IDS $QUBIT4 $QUBIT3 $QUBIT2 $QUBIT1 $QUBIT0 || exit 1
+fi
 
 echo "\n\n---------- Running job on GPU ----------\n\n"
 #--wait allows bash to wait for it to be done
@@ -87,7 +87,7 @@ cp ~/570_job* slurm_job_output/
 rm ~/570_job*
 
 echo "\n\n---------- Comparing output ----------\n\n"
-#~/Python-3.8.1/python3.8 compare_outputs.py
+~/Python-3.8.1/python3.8 compare_outputs.py
 
 #vimdiff output.txt output_truth.txt
 

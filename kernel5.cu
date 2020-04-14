@@ -315,24 +315,17 @@ int main(int argc, char **argv) {
     std::ifstream fin;
     complex temp;
 	std::complex<float> std_complex_temp;
-	/*
+
+
     fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
-	if (fin.rdstate() == std::ios_base::failbit) {
-		std::cout << "Ifstream failed with failbit" << std::endl;
-	}
-	else if (fin.rdstate() == std::ios_base::eofbit) {
-		std::cout << "Ifstream failed with eofbit" << std::endl;
-	}
-	else if (fin.rdstate() == std::ios_base::badbit) {
-		std::cout << "Ifstream failed with badbit" << std::endl;
-	}
-	std::cout << "Vector size: " << state_vec_size << std::endl;
     fin.close();
-	*/
+
+
+	/*
     for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
@@ -340,6 +333,8 @@ int main(int argc, char **argv) {
         complex val = C(real, imag);
 		state_vec.push_back(val);
     }
+	*/
+
 
     unsigned long state_vec_size = state_vec.size();
 

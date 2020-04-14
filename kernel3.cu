@@ -532,7 +532,8 @@ int main(int argc, char **argv) {
     std::ifstream fin;
     complex temp;
 	std::complex<float> std_complex_temp;
-	/*
+
+
     fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
@@ -549,7 +550,8 @@ int main(int argc, char **argv) {
 	}
 	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
-	*/
+
+	/*
     for (unsigned long i = 0; i < 1 << vec_size_in; i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
@@ -557,6 +559,7 @@ int main(int argc, char **argv) {
         complex val = C(real, imag);
 		state_vec.push_back(val);
     }
+	*/
 
     unsigned long state_vec_size = state_vec.size();
 
