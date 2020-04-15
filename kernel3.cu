@@ -183,9 +183,9 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, M s
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
 	std::cout << "Copying to device error is: " << cpy_error << std::endl;
+    three_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, chunk_size);
 	cudaError_t kernel_error = cudaGetLastError();
 	std::cout << "Kernel error is: " << kernel_error << std::endl;
-    three_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, chunk_size);
     cudaDeviceSynchronize();
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
 	std::cout << "Copying to host error is: " << cpy_error << std::endl;

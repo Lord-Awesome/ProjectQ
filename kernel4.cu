@@ -59,51 +59,44 @@ __global__ void four_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
     //qid0 is smaller than qid1
 
     //Initialize shared memory
-    //extern __shared__ complex smem[];
+    __shared__ complex result[MAT_DIM];
 
     int elements_per_thread = MAT_DIM; //4 quibit kernel
-    int working_set = elements_per_chunk;
 
     int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
+	int batch0_stride = 2 * (1 << qid0);
+	int batch1_stride = 2 * (1 << qid1);
+	int batch2_stride = 2 * (1 << qid2);
+	int batch3_stride = 2 * (1 << qid3);
     for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
 
-        //inside batch0
-        int blocks_per_batch0 = (1 << qid0) / working_set;
-        int batch0_stride = 2 * (1 << qid0);
-
-        //inside batch1
-        int blocks_per_batch1 = (1 << qid1) / (2 * working_set);
-        int batch1_depth = (global_block_id % blocks_per_batch1);
-        int batch1_stride = 2 * (1 << qid1);
-
-		//inside batch2
-		int blocks_per_batch2 = (1 << qid2) / (4 * working_set);
-		int batch2_depth = (global_block_id % blocks_per_batch2);
-		int batch2_stride = 2 * (1 << qid2);
-
-		//inside batch3
-		int blocks_per_batch3 = (1 << qid3) / (8 * working_set);
-		int batch3_depth = (global_block_id % blocks_per_batch3);
-		int batch3_stride = 2 * (1 << qid3);
-
-        //ids
-        int chunk_id = global_block_id % blocks_per_batch0;
-        int batch0_id = batch1_depth / blocks_per_batch0;
-        int batch1_id = batch2_depth / blocks_per_batch1;
-        int batch2_id = batch3_depth / blocks_per_batch2;
-        int batch3_id = global_block_id / blocks_per_batch3;
-
         int element_id_base = 0;
-        element_id_base += threadIdx.x;
-        element_id_base += chunk_id * working_set;
-        element_id_base += batch0_id * batch0_stride;
-        element_id_base += batch1_id * batch1_stride;
-        element_id_base += batch2_id * batch2_stride;
-        element_id_base += batch3_id * batch3_stride;
+		int global_thread_id = (threadIdx.x + global_block_id * blockDim.x);
+
+		element_id_base += global_thread_id % (batch0_stride/2);
+
+		int batch1_depth = global_thread_id % (batch1_stride/4);
+		int batch0_id = batch1_depth / (batch0_stride/2);
+
+		element_id_base += batch0_id * batch0_stride;
+
+		int batch2_depth = global_thread_id % (batch2_stride/8);
+		int batch1_id = batch2_depth / (batch1_stride/4);
+
+		element_id_base += batch1_id * batch1_stride;
+
+		int batch3_depth = global_thread_id % (batch3_stride/16);
+		int batch2_id = batch3_depth / (batch2_stride/8);
+
+		element_id_base += batch2_id * batch2_stride;
+
+		int batch3_id = global_thread_id / (batch3_stride/16);
+
+		element_id_base += batch3_id * batch3_stride;
+
 
         //iteration dependent
 
-        complex result[MAT_DIM];
         for(int row = 0; row < MAT_DIM; row++) {
             result[row] = C(0.0f, 0.0f);
         }
@@ -171,7 +164,9 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 	//A chunk can't be larger than shared memory because we need to hold it all at once
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
 	//A chunk can't be larger than a batch by definition
-    int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
+    //int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
+	//int chunk_size = max_threads_per_block;
+	int chunk_size = 768;
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
 	int max_grid_size = deviceProp.maxGridSize[0];
@@ -201,6 +196,8 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
 	std::cout << "Copying to device error is: " << cpy_error << std::endl;
     four_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, quid3, chunk_size);
+	cudaError_t kernel_error = cudaGetLastError();
+	std::cout << "Kernel error is: " << kernel_error << std::endl;
     cudaDeviceSynchronize();
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
 	std::cout << "Copying to host error is: " << cpy_error << std::endl;

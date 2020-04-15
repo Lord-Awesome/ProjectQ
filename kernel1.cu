@@ -60,7 +60,6 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
 
     //qid0 is smaller than qid
     int elements_per_thread = MAT_DIM; //1 quibit kernel
-    int working_set = elements_per_chunk;
     int qid0 = qubit_id;
     int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
     int batch0_stride = (1 << (qid0 + 1));
@@ -70,19 +69,9 @@ __global__ void one_qubit_kernel(complex* vec, int vec_size, int qubit_id, int e
 
         int element_id_base = 0;
 
-        if ((1 << (qid0 + 1)) > blockDim.x) {
-            int blocks_per_batch0 = (1 << qid0) / working_set;
-            int chunk_id = global_block_id % blocks_per_batch0;
-            int batch0_id = global_block_id / blocks_per_batch0;
-            element_id_base += threadIdx.x;
-            element_id_base += chunk_id * working_set;
-            element_id_base += batch0_id * batch0_stride;
-        }
-        else {
-            int batch0_id = (threadIdx.x + global_block_id * blockDim.x) / (batch0_stride/2);
-            element_id_base += (threadIdx.x + global_block_id * blockDim.x) % (batch0_stride/2);
-            element_id_base += batch0_id * batch0_stride;
-        }
+		int batch0_id = (threadIdx.x + global_block_id * blockDim.x) / (batch0_stride/2);
+		element_id_base += (threadIdx.x + global_block_id * blockDim.x) % (batch0_stride/2);
+		element_id_base += batch0_id * batch0_stride;
 
         //iteration dependent
 
@@ -139,9 +128,6 @@ void run_kernel(complex* vec, int vec_size, int qubit_id, M source_matrix) {
 
     int max_threads_per_block = (int) deviceProp.maxThreadsPerBlock;
 
-    //batch: pairs before regions overlap
-    //const unsigned long batch_size = 1UL << (qubit_id + 1); //in elements
-   
     // calculate
     int num_loads_to_sm = 0;
     int num_large_qubits = (1 << (qubit_id + 1)) > max_threads_per_block;
