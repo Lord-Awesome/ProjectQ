@@ -62,70 +62,54 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
     __shared__ int smem[20];
 
     int blocks_in_state_vector = ceil(vec_size / (float) (MAT_DIM * blockDim.x));
-	//int flag = 0;
     for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
 		__syncthreads();
 
-        //inside batch0
-        //int blocks_per_batch0 = (1 << qid0) / elements_per_chunk;
-        smem[0] = (1 << qid0) / elements_per_chunk;
-        //int batch0_stride = 2 * (1 << qid0);
-        smem[1] = 2 * (1 << qid0);
-
-        //inside batch1
-        //int blocks_per_batch1 = (1 << qid1) / (2 * elements_per_chunk);
-        smem[2] = (1 << qid1) / (2 * elements_per_chunk);
-        //int batch1_depth = (global_block_id % smem[2]);
-        smem[3] = (global_block_id % smem[2]);
-        //int batch1_stride = 2 * (1 << qid1);
-        smem[4] = 2 * (1 << qid1);
-
-		//inside batch2
-		//int blocks_per_batch2 = (1 << qid2) / (4 * elements_per_chunk);
-		smem[5] = (1 << qid2) / (4 * elements_per_chunk);
-		//int batch2_depth = (global_block_id % smem[5]);
-		smem[6] = (global_block_id % smem[5]);
-		//int batch2_stride = 2 * (1 << qid2);
-		smem[7] = 2 * (1 << qid2);
-
-		//inside batch3
-		//int blocks_per_batch3 = (1 << qid3) / (8 * elements_per_chunk);
-		smem[8] = (1 << qid3) / (8 * elements_per_chunk);
-		//int batch3_depth = (global_block_id % smem[8]);
-		smem[9] = (global_block_id % smem[8]);
-		//int batch3_stride = 2 * (1 << qid3);
-		smem[10] = 2 * (1 << qid3);
-
-		//inside batch4
-		//int blocks_per_batch4 = (1 << qid4) / (16 * elements_per_chunk);
-		smem[11] = (1 << qid4) / (16 * elements_per_chunk);
-		//int batch4_depth = (global_block_id % smem[11]);
-		smem[12] = (global_block_id % smem[11]);
-		//int batch4_stride = 2 * (1 << qid4);
-		smem[13] = 2 * (1 << qid4);
-
-        //ids
-        //int chunk_id = global_block_id % smem[0];
-        smem[14] = global_block_id % smem[0];
-        //int batch0_id = smem[3] / smem[0];
-        smem[15] = smem[3] / smem[0];
-        //int batch1_id = smem[6] / smem[2];
-        smem[16] = smem[6] / smem[2];
-        //int batch2_id = smem[9] / smem[5];
-        smem[17] = smem[9] / smem[5];
-        //int batch3_id = smem[12] / smem[8];
-        smem[18] = smem[12] / smem[8];
-        //int batch4_id = global_block_id / smem[11];
-        smem[19] = global_block_id / smem[11];
+		int batch0_stride = 2 * (1 << qid0);
+		int batch1_stride = 2 * (1 << qid1);
+		int batch2_stride = 2 * (1 << qid2);
+		int batch3_stride = 2 * (1 << qid3);
+		int batch4_stride = 2 * (1 << qid4);
 
         int element_id_base = 0;
-        element_id_base += threadIdx.x;
-        element_id_base += smem[14] * elements_per_chunk;
-        element_id_base += smem[15] * smem[1];
-        element_id_base += smem[16] * smem[4];
-        element_id_base += smem[17] * smem[7];
-        element_id_base += smem[18] * smem[10];
-        element_id_base += smem[19] * smem[13];
+		int global_thread_id = (threadIdx.x + global_block_id * blockDim.x);
+		{
+		element_id_base += global_thread_id % (batch0_stride/2);
+		}
+
+		{
+		int batch1_depth = global_thread_id % (batch1_stride/4);
+		int batch0_id = batch1_depth / (batch0_stride/2);
+
+		element_id_base += batch0_id * batch0_stride;
+		}
+
+		{
+		int batch2_depth = global_thread_id % (batch2_stride/8);
+		int batch1_id = batch2_depth / (batch1_stride/4);
+
+		element_id_base += batch1_id * batch1_stride;
+		}
+
+		{
+		int batch3_depth = global_thread_id % (batch3_stride/16);
+		int batch2_id = batch3_depth / (batch2_stride/8);
+
+		element_id_base += batch2_id * batch2_stride;
+		}
+
+		{
+		int batch4_depth = global_thread_id % (batch4_stride/32);
+		int batch3_id = batch4_depth / (batch3_stride/16);
+
+		element_id_base += batch3_id * batch3_stride;
+		}
+
+		{
+		int batch4_id = global_thread_id / (batch4_stride/32);
+
+		element_id_base += batch4_id * batch4_stride;
+		}
 
         //iteration dependent
 
@@ -140,7 +124,7 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
 		}
 
 
-        __shared__ complex result[MAT_DIM];
+		complex result[MAT_DIM];
         for(int row = 0; row < MAT_DIM; row++) result[row] = C(0.0f, 0.0f);
 
 
@@ -242,11 +226,8 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 	//A chunk can't be larger than shared memory because we need to hold it all at once
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
 	//A chunk can't be larger than a batch by definition
-    int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
-	//CRK: Full blocks are allocating too many resources (not enough registers per block), so I'm nerfing it
-	if (chunk_size > 512) {
-		chunk_size = 512;
-	}
+    //int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
+	int chunk_size = 256;
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
 	int max_grid_size = deviceProp.maxGridSize[0];
@@ -280,9 +261,9 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 
     complex *d_vec;
     cudaError_t malloc_error = cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
-	std::cout << "Malloc error is: " << malloc_error << std::endl;
+	//std::cout << "Malloc error is: " << malloc_error << std::endl;
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
-	std::cout << "Copying to device error is: " << cpy_error << std::endl;
+	//std::cout << "Copying to device error is: " << cpy_error << std::endl;
     five_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, quid3, quid4, chunk_size);
     cudaDeviceSynchronize();
 	cudaError_t err = cudaGetLastError();
@@ -290,7 +271,7 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 		std::cout << "Kernel failed with error: " << cudaGetErrorString(err) << std::endl;
 	}
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
-	std::cout << "Copying to host error is: " << cpy_error << std::endl;
+	//std::cout << "Copying to host error is: " << cpy_error << std::endl;
     cudaFree(d_vec);
 
 	stop = std::chrono::high_resolution_clock::now();

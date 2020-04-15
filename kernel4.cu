@@ -59,7 +59,6 @@ __global__ void four_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
     //qid0 is smaller than qid1
 
     //Initialize shared memory
-    __shared__ complex result[MAT_DIM];
 
     int elements_per_thread = MAT_DIM; //4 quibit kernel
 
@@ -97,6 +96,7 @@ __global__ void four_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
 
         //iteration dependent
 
+		complex result[MAT_DIM];
         for(int row = 0; row < MAT_DIM; row++) {
             result[row] = C(0.0f, 0.0f);
         }
@@ -194,13 +194,13 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
-	std::cout << "Copying to device error is: " << cpy_error << std::endl;
+	//std::cout << "Copying to device error is: " << cpy_error << std::endl;
     four_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, quid3, chunk_size);
-	cudaError_t kernel_error = cudaGetLastError();
-	std::cout << "Kernel error is: " << kernel_error << std::endl;
+	//cudaError_t kernel_error = cudaGetLastError();
+	//std::cout << "Kernel error is: " << kernel_error << std::endl;
     cudaDeviceSynchronize();
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
-	std::cout << "Copying to host error is: " << cpy_error << std::endl;
+	//std::cout << "Copying to host error is: " << cpy_error << std::endl;
     cudaFree(d_vec);
 
 	stop = std::chrono::high_resolution_clock::now();

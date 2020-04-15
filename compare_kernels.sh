@@ -1,11 +1,11 @@
 NUM_QUBITS=20
-NUM_QUBIT_IDS=4
+NUM_QUBIT_IDS=5
 #Ascending IDs
-QUBIT0=4
-QUBIT1=14
-QUBIT2=16
-QUBIT3=18
-QUBIT4=21
+QUBIT0=0
+QUBIT1=1
+QUBIT2=2
+QUBIT3=3
+QUBIT4=4
 
 
 echo "\n\n---------- Removing time_comparison.txt ----------\n\n"
@@ -17,11 +17,11 @@ g++ --std=c++11 gen_source_matrix.cpp -o gen_source_matrix.o || exit 1
 g++ -g --std=c++11 projectq_kernel_nointrin_runner.cpp -o projectq_kernel_nointrin_runner.o -I./projectq/backends/_sim/_cppkernels/nointrin/ || exit 1
 g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_intrin_runner.o -I./projectq/backends/_sim/_cppkernels/intrin/ || exit 1
 echo "\n\n---------- Compiling with NVCC----------\n\n"
-nvcc --std=c++11 kernel1.cu -o kernel1.o || exit 1
-nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
-nvcc --std=c++11 kernel3.cu -o kernel3.o || exit 1
-nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
-nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
+nvcc --std=c++11 -O3 kernel1.cu -o kernel1.o || exit 1
+nvcc --std=c++11 -O3 kernel2.cu -o kernel2.o || exit 1
+nvcc --std=c++11 -O3 kernel3.cu -o kernel3.o || exit 1
+nvcc --std=c++11 -O3 kernel4.cu -o kernel4.o || exit 1
+nvcc --std=c++11 -O3 kernel5.cu -o kernel5.o || exit 1
 
 echo "\n\n---------- Generating truth ----------\n\n"
 ./gen_state_vec.o $NUM_QUBITS || exit 1
