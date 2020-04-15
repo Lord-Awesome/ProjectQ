@@ -62,12 +62,8 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
     extern __shared__ complex smem[];
 
     int elements_per_thread = MAT_DIM; //3 quibit kernel
-    int working_set = elements_per_chunk;
 
     int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
-	int blocks_per_batch0 = (1 << qid0) / working_set;
-	int blocks_per_batch1 = (1 << qid1) / (2 * working_set);
-	int blocks_per_batch2 = (1 << qid2) / (4 * working_set);
 	int batch0_stride = 2 * (1 << qid0);
 	int batch1_stride = 2 * (1 << qid1);
 	int batch2_stride = 2 * (1 << qid2);
@@ -75,51 +71,20 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
 
         int element_id_base = 0;
 		int global_thread_id = (threadIdx.x + global_block_id * blockDim.x);
-		/*
 
-        if ((1 << (qid0 + 1)) > blockDim.x) {
-			int chunk_id = global_block_id % blocks_per_batch0;
-			int batch1_depth = (global_block_id % blocks_per_batch1);
-			int batch0_id = batch1_depth / blocks_per_batch0;
-			element_id_base += threadIdx.x;
-			element_id_base += chunk_id * working_set;
-			element_id_base += batch0_id * batch0_stride;
-		}
-		else {
-			int batch1_depth = global_thread_id % (batch1_stride/4);
-			int batch0_id = batch1_depth / (batch0_stride/2);
-            element_id_base += global_thread_id % (batch0_stride/2);
-            element_id_base += batch0_id * batch0_stride;
-		}
-
-        if ((1 << (qid1 + 1)) > blockDim.x) {
-			int batch2_depth = (global_block_id % blocks_per_batch2);
-			int batch1_id = batch2_depth / blocks_per_batch1;
-			element_id_base += batch1_id * batch1_stride;
-		}
-		else {
-			int batch2_depth = global_thread_id % (batch2_stride/8);
-			int batch1_id = batch2_depth / (batch1_stride/4);
-            element_id_base += batch1_id * batch1_stride;
-		}
-
-        if ((1 << (qid2 + 1)) > blockDim.x) {
-			int batch2_id = global_block_id / blocks_per_batch2;
-			element_id_base += batch2_id * batch2_stride;
-		}
-		else {
-            int batch2_id = global_thread_id / (batch2_stride/8);
-            element_id_base += batch2_id * batch2_stride;
-		}
-		*/
 		int batch1_depth = global_thread_id % (batch1_stride/4);
 		int batch0_id = batch1_depth / (batch0_stride/2);
+
 		element_id_base += global_thread_id % (batch0_stride/2);
 		element_id_base += batch0_id * batch0_stride;
+
 		int batch2_depth = global_thread_id % (batch2_stride/8);
 		int batch1_id = batch2_depth / (batch1_stride/4);
+
 		element_id_base += batch1_id * batch1_stride;
+
 		int batch2_id = global_thread_id / (batch2_stride/8);
+
 		element_id_base += batch2_id * batch2_stride;
 
 
@@ -186,9 +151,6 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, M s
     int smem_size_in_elems = smem_size_in_bytes/(2*sizeof(double));
 
     int max_threads_per_block = (int) deviceProp.maxThreadsPerBlock;
-
-    //batch: pairs before regions overlap
-	const unsigned long batch_size = 1UL << (quid0); //in elements
 
 	//A chunk can't be larger than shared memory because we need to hold it all at once
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
