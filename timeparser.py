@@ -95,6 +95,7 @@ def plot_gpu_speedup_vs_vec_size_line():
     plt.savefig(save_filename)
     plt.close(fig)
     print("Generated " + save_filename)
+    plt.show()
 
 def plot_time_vs_vec_size_bar():
 
@@ -116,6 +117,7 @@ def plot_time_vs_vec_size_bar():
     #final_intrin_time = np.mean(intrin_time, axis=0)
     final_nointrin_time = np.mean(nointrin_time, axis=0)
     final_intrin_time = np.mean(intrin_time, axis=0)
+
     final_gpu_time = np.log(final_gpu_time)
     final_nointrin_time = np.log(final_nointrin_time)
     final_intrin_time = np.log(final_intrin_time)
@@ -135,9 +137,9 @@ def plot_time_vs_vec_size_bar():
     
     # Make the plot
     fig = plt.figure()
-    plt.bar(r1, [x / 1e9 for x in bars1], color='#000000', width=barWidth, edgecolor='white', label='gpu')
-    plt.bar(r2, [x / 1e9 for x in bars2], color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
-    plt.bar(r3, [x / 1e9 for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
+    plt.bar(r1, [x for x in bars1], color='#000000', width=barWidth, edgecolor='white', label='gpu')
+    plt.bar(r2, [x for x in bars2], color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
+    plt.bar(r3, [x for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
     
     # Add xticks on the middle of the group bars and show legend
     plt.title('Log scale of time vs size of state vector')
@@ -151,6 +153,172 @@ def plot_time_vs_vec_size_bar():
     plt.savefig(save_filename)
     plt.close(fig)
     print("Generated " + save_filename)
+    plt.show()
+
+def plot_time_vs_operator_size_bar():
+
+    intrin_time = []
+    nointrin_time = []
+    for iter in range(NUM_ITER):
+        nointrin_time.append([]);
+        intrin_time.append([]);
+        data = get_data('data/iterations/graph_data_operator_size_iter_'+str(iter)+'.txt')
+        qs = []
+        final_gpu_time = []
+        for d in data:
+            qs.append(len(d['qids_list']))
+            final_gpu_time.append(d['gpu'])
+            intrin_time[-1].append(d['intrin'])
+            nointrin_time[-1].append(d['nointrin'])
+    
+    final_nointrin_time = np.mean(nointrin_time, axis=0)
+    final_intrin_time = np.mean(intrin_time, axis=0)
+    #final_gpu_time = np.log(final_gpu_time)
+    #final_nointrin_time = np.log(final_nointrin_time)
+    #final_intrin_time = np.log(final_intrin_time)
+
+    # set width of bar
+    barWidth = 0.25
+    
+    # set height of bar
+    bars1 = final_gpu_time
+    bars2 = final_intrin_time
+    bars3 = final_nointrin_time
+    
+    # Set position of bar on X axis
+    r1 = np.arange(len(bars1))
+    r2 = [x + barWidth for x in r1]
+    r3 = [x + barWidth for x in r2]
+    
+    # Make the plot
+    fig = plt.figure()
+    plt.bar(r1, [x / 1e6 for x in bars1], color='#000000', width=barWidth, edgecolor='white', label='gpu')
+    #plt.bar(r2, [x / 1e6 for x in bars2], color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
+    #plt.bar(r3, [x / 1e6 for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
+    
+    # Add xticks on the middle of the group bars and show legend
+    plt.title('Time vs operator size')
+    plt.xlabel('Number of qubits operated on', fontweight='bold')
+    plt.ylabel('time (ms)', fontweight='bold')
+    plt.xticks([r + barWidth for r in range(len(bars1))], qs)
+    #plt.legend()
+    
+    # Save
+    save_filename = 'plots/time_vs_operator_size.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
+    plt.show()
+
+def plot_time_vs_qubit_magnitude_bar():
+
+    intrin_time = []
+    nointrin_time = []
+    for iter in range(NUM_ITER):
+        nointrin_time.append([]);
+        intrin_time.append([]);
+        data = get_data('data/iterations/graph_data_qubitid_magnitude_iter_'+str(iter)+'.txt')
+        qs = []
+        final_gpu_time = []
+        for d in data:
+            qs.append((d['qids_list'][0]))
+            final_gpu_time.append(d['gpu'])
+            intrin_time[-1].append(d['intrin'])
+            nointrin_time[-1].append(d['nointrin'])
+    
+    final_nointrin_time = np.mean(nointrin_time, axis=0)
+    final_intrin_time = np.mean(intrin_time, axis=0)
+    #final_gpu_time = np.log(final_gpu_time)
+    #final_nointrin_time = np.log(final_nointrin_time)
+    #final_intrin_time = np.log(final_intrin_time)
+
+    # set width of bar
+    barWidth = 0.25
+    
+    # set height of bar
+    bars1 = final_gpu_time
+    bars2 = final_intrin_time
+    bars3 = final_nointrin_time
+    
+    # Set position of bar on X axis
+    r1 = np.arange(len(bars1))
+    r2 = [x + barWidth for x in r1]
+    r3 = [x + barWidth for x in r2]
+    
+    # Make the plot
+    fig = plt.figure()
+    plt.bar(r1, [x / 1e6 for x in bars1], color='#000000', width=barWidth, edgecolor='white', label='gpu')
+    #plt.bar(r2, [x / 1e6 for x in bars2], color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
+    #plt.bar(r3, [x / 1e6 for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
+    
+    # Add xticks on the middle of the group bars and show legend
+    plt.title('Time vs qubit magnitude')
+    plt.xlabel('Magnitude of lowest qubit id', fontweight='bold')
+    plt.ylabel('time (ms)', fontweight='bold')
+    plt.xticks([r + barWidth for r in range(len(bars1))], qs)
+    plt.legend()
+    
+    # Save
+    save_filename = 'plots/time_vs_qubit_magnitude.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
+    plt.show()
+
+def plot_time_vs_qubit_spacing_bar():
+
+    intrin_time = []
+    nointrin_time = []
+    for iter in range(NUM_ITER):
+        nointrin_time.append([]);
+        intrin_time.append([]);
+        data = get_data('data/iterations/graph_data_qubitid_spacing_iter_'+str(iter)+'.txt')
+        qs = []
+        final_gpu_time = []
+        for d in data:
+            qs.append((d['qids_list'][1]) - d['qids_list'][0])
+            final_gpu_time.append(d['gpu'])
+            intrin_time[-1].append(d['intrin'])
+            nointrin_time[-1].append(d['nointrin'])
+    
+    final_nointrin_time = np.mean(nointrin_time, axis=0)
+    final_intrin_time = np.mean(intrin_time, axis=0)
+    #final_gpu_time = np.log(final_gpu_time)
+    #final_nointrin_time = np.log(final_nointrin_time)
+    #final_intrin_time = np.log(final_intrin_time)
+
+    # set width of bar
+    barWidth = 0.25
+    
+    # set height of bar
+    bars1 = final_gpu_time
+    bars2 = final_intrin_time
+    bars3 = final_nointrin_time
+    
+    # Set position of bar on X axis
+    r1 = np.arange(len(bars1))
+    r2 = [x + barWidth for x in r1]
+    r3 = [x + barWidth for x in r2]
+    
+    # Make the plot
+    fig = plt.figure()
+    plt.bar(r1, [x / 1e6 for x in bars1], color='#000000', width=barWidth, edgecolor='white', label='gpu')
+    #plt.bar(r2, [x / 1e6 for x in bars2], color='#FF6666', width=barWidth, edgecolor='white', label='intrinsics')
+    #plt.bar(r3, [x / 1e6 for x in bars3], color='#6666FF', width=barWidth, edgecolor='white', label='nonintrinsics')
+    
+    # Add xticks on the middle of the group bars and show legend
+    plt.title('Time vs qubit spacing')
+    plt.xlabel('Spacing between two qubits with highest at qubit 19', fontweight='bold')
+    plt.ylabel('time (ms)', fontweight='bold')
+    plt.xticks([r + barWidth for r in range(len(bars1))], qs)
+    plt.legend()
+    
+    # Save
+    save_filename = 'plots/time_vs_qubit_spacing.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
+    plt.show()
 
 def plot_gpu_speedup_vs_operator_size_line():
 
@@ -205,6 +373,7 @@ def plot_gpu_speedup_vs_operator_size_line():
     plt.savefig(save_filename)
     plt.close(fig)
     print("Generated " + save_filename)
+    plt.show()
 
 def plot_gpu_speedup_vs_qubit_magnitude_line():
 
@@ -260,6 +429,7 @@ def plot_gpu_speedup_vs_qubit_magnitude_line():
     plt.savefig(save_filename)
     plt.close(fig)
     print("Generated " + save_filename)
+    plt.show()
 
 def plot_gpu_speedup_vs_qubit_spacing():
 
@@ -378,10 +548,14 @@ def main():
 
     #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
     plot_gpu_speedup_vs_operator_size_line()
+    plot_time_vs_operator_size_bar()
 
     #Analysis of the effect of the magnitude of the qubit ids
     plot_gpu_speedup_vs_qubit_magnitude_line()
+    plot_time_vs_qubit_magnitude_bar()
+
     plot_gpu_speedup_vs_qubit_spacing()
+    plot_time_vs_qubit_spacing_bar()
 
 if __name__ == "__main__":
     main()

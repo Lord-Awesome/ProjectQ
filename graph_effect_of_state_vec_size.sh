@@ -14,7 +14,7 @@ g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_in
 echo "\n\n---------- Compiling with NVCC----------\n\n"
 #nvcc --std=c++11 kernel1.cu -o kernel1.o || exit 1
 #nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
-nvcc --std=c++11 kernel3.cu -o kernel3.o || exit 1
+nvcc --std=c++11 -O3 kernel3.cu -o kernel3.o || exit 1
 #nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
 #nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
 

@@ -22,14 +22,15 @@ int main(int argc, char **argv) {
 
 
 
+	/*
     fin.open(VEC_FILENAME);
     while(fin >> temp) {
         state_vec.push_back(temp);
     }
     fin.close();
+	*/
 
 
-	/*
     for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
@@ -37,7 +38,6 @@ int main(int argc, char **argv) {
         complex val = C(real, imag);
 		state_vec.push_back(val);
     }
-	*/
 
 	//Read in source matrix
 	int mat_dim = 1<<atoi(argv[2]);
@@ -91,6 +91,7 @@ int main(int argc, char **argv) {
 	f_time << "Intrin baseline time: " << duration.count() << "\n";
 	f_time.close();
 
+	/*
     std::ofstream fout;
     fout.open("output_truth.txt");
     for (size_t i = 0; i < state_vec.size(); ++i) {
@@ -98,5 +99,6 @@ int main(int argc, char **argv) {
 	fout << val << "\n";	
     }
     fout.close();
+	*/
     return 0;
 }

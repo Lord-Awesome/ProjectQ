@@ -199,6 +199,7 @@ int main(int argc, char **argv) {
 	std::complex<float> std_complex_temp;
 
 
+	/*
     fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
@@ -215,9 +216,9 @@ int main(int argc, char **argv) {
 	}
 	std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
+	*/
 
 
-	/*
     for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
@@ -225,7 +226,6 @@ int main(int argc, char **argv) {
         complex val = C(real, imag);
 		state_vec.push_back(val);
     }
-	*/
 
     unsigned long state_vec_size = state_vec.size();
 
@@ -264,6 +264,7 @@ int main(int argc, char **argv) {
 	f_time << "GPU time: " << duration.count() << "\n";
 	f_time.close();
  
+/*
     std::ofstream f;
     f.open("output.txt");
     for (unsigned long i = 0; i < state_vec_size; ++i) {
@@ -271,6 +272,7 @@ int main(int argc, char **argv) {
         f << val;	
     }
     f.close();
+*/
     
     //debug
     std::cout << "size: " << state_vec.size() << std::endl;

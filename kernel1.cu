@@ -185,6 +185,7 @@ int kth_qubit = atoi(argv[2]);
     std::ifstream fin;
     complex temp;
 std::complex<float> std_complex_temp;
+/*
     fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 temp = C(std_complex_temp.real(), std_complex_temp.imag());
@@ -201,8 +202,8 @@ std::cout << "Ifstream failed with badbit" << std::endl;
 }
 std::cout << "Vector size: " << state_vec.size() << std::endl;
     fin.close();
+*/
 
-/*
     for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
@@ -210,7 +211,6 @@ std::cout << "Vector size: " << state_vec.size() << std::endl;
         complex val = C(real, imag);
 state_vec.push_back(val);
     }
-*/
 
     unsigned long state_vec_size = state_vec.size();
 
@@ -249,6 +249,7 @@ f_time.open("time_comparison.txt", std::ios_base::app);
 f_time << "GPU time: " << duration.count() << "\n";
 f_time.close();
  
+ /*
     std::ofstream f;
     f.open("output.txt");
     for (unsigned long i = 0; i < state_vec_size; ++i) {
@@ -256,6 +257,7 @@ f_time.close();
         f << val;
     }
     f.close();
+	*/
    
     //debug
     std::cout << "size: " << state_vec.size() << std::endl;

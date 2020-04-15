@@ -1,3 +1,3 @@
-No intrin baseline time: 1894223381
-Intrin baseline time: 191474143
-GPU time: 4058709
+No intrin baseline time: 30047211688
+Intrin baseline time: 3821357226
+GPU time: 1819437581

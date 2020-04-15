@@ -1,6 +1,6 @@
 NUM_ITER=5
 
-for ((ITER=1; ITER<$NUM_ITER; ITER++));
+for ((ITER=0; ITER<$NUM_ITER; ITER++));
 do
 	START_TIME=$SECONDS
 
