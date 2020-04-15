@@ -71,11 +71,11 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
 	int batch0_stride = 2 * (1 << qid0);
 	int batch1_stride = 2 * (1 << qid1);
 	int batch2_stride = 2 * (1 << qid2);
-	int flag = 0;
     for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
 
         int element_id_base = 0;
 		int global_thread_id = (threadIdx.x + global_block_id * blockDim.x);
+		/*
 
         if ((1 << (qid0 + 1)) > blockDim.x) {
 			int chunk_id = global_block_id % blocks_per_batch0;
@@ -111,6 +111,16 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
             int batch2_id = global_thread_id / (batch2_stride/8);
             element_id_base += batch2_id * batch2_stride;
 		}
+		*/
+		int batch1_depth = global_thread_id % (batch1_stride/4);
+		int batch0_id = batch1_depth / (batch0_stride/2);
+		element_id_base += global_thread_id % (batch0_stride/2);
+		element_id_base += batch0_id * batch0_stride;
+		int batch2_depth = global_thread_id % (batch2_stride/8);
+		int batch1_id = batch2_depth / (batch1_stride/4);
+		element_id_base += batch1_id * batch1_stride;
+		int batch2_id = global_thread_id / (batch2_stride/8);
+		element_id_base += batch2_id * batch2_stride;
 
 
         //iteration dependent
@@ -152,13 +162,9 @@ __global__ void three_qubit_kernel(complex* vec, int vec_size, int qid0, int qid
 					//store
 					int row = (4*i)+(2*j)+k;
 					if(element_id < vec_size) {
-						//vec[element_id] = result[row];
+						vec[element_id] = result[row];
 						//vec[element_id] = C((float)element_id_base,(float)offset);
-						vec[element_id] = C((float)global_thread_id, (float)element_id_base);
-					}
-					if (threadIdx.x == 0 && global_block_id == 0) {
-						vec[0] = C((float)global_thread_id, (float)element_id_base);
-						flag = 1;
+						//vec[element_id] = C((float)global_thread_id, (float)element_id_base);
 					}
 				}//k
             }//j
