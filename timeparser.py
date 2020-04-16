@@ -173,7 +173,7 @@ def plot_gpu_speedup_vs_vec_size_line():
     ax1.tick_params(axis='y', labelcolor='b')
     ax2.plot(qs, final_nointrin_speedup, 'r', label='relative to nointrin')
     ax2.tick_params(axis='y', labelcolor='r')
-    ax1.legend(loc='lower left')
+    ax1.legend(loc='top left')
     ax2.legend(loc='lower right')
 
     #Apply linear regression and plot if r2 is sufficiently good
@@ -451,7 +451,7 @@ def plot_gpu_speedup_vs_operator_size_line():
     ax1.tick_params(axis='y', labelcolor='b')
     ax2.plot(operator_size, final_nointrin_speedup, 'r', label='relative to nointrin')
     ax2.tick_params(axis='y', labelcolor='r')
-    ax1.legend(loc='lower left')
+    ax1.legend(loc='top left')
     ax2.legend(loc='lower right')
 
     #Apply linear regression and plot if r2 is sufficiently good
