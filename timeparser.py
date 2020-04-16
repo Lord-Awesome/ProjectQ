@@ -45,7 +45,98 @@ def get_data(infile):
                 'gpu' : gpu
             })
     return data
+
+def get_quest_data(infile, projectq_data):
+    count = 0
+    data = []
+
+    if not os.path.isfile(infile):
+        raise Exception('input file ' + infile + ' does not exist')
+
+    with open(infile, 'r') as f:
+        for line in f:
+            count += 1
+    
+    if count % 2 != 0 or count == 0:
+        raise Exception('malformed input file')
+
+    with open(infile, 'r') as f: 
+        for _ in range(int(count / 2)):
+            qids_split = f.readline().split(' ')
+            num_qubits = None
+            qids_list = []
+            for i, qid in enumerate(qids_split):
+                if i % 2:
+                    if i == 1:
+                        num_qubits = qid
+                    else:
+                        qids_list.append(int(qid.replace('\n','')))
+            qids_list.sort()
             
+            quest_gpu = int(f.readline())
+            data.append({
+                'num_qubits' : num_qubits,
+                'qids_list' : qids_list,
+                'quest_gpu' : quest_gpu
+            })
+    for d1 in projectq_data:
+        for d2 in data:
+            #print(d2['num_qubits'])
+            if d1['num_qubits'] == d2['num_qubits'] and d1['qids_list'] == d2['qids_list']:
+                d1['quest_gpu'] = d2['quest_gpu']
+    return projectq_data
+
+def plot_quest_speedup_vs_vec_size_line():
+    quest_speedup = []
+    for iter in range(NUM_ITER):
+        print(iter)
+        quest_speedup.append([])
+        data = get_data('data/iterations/graph_data_state_vec_size_iter_'+str(iter)+'.txt')
+        data = get_quest_data('data/quest_graph_kernel_only_data_state_vec_size.txt', data)
+        qs = []
+
+        for d in data:
+            if d['num_qubits'] == '28':
+                continue
+            print(d)
+            qs.append(d['num_qubits'])
+            quest_speedup[-1].append(d['quest_gpu']/d['gpu']) #speedup is inverse of time
+            
+    #final_nointrin_speedup = (*map(mean,zip(*nointrin_speedup)))
+    #final_intrin_speedup = (*map(mean,zip(*intrin_speedup)))
+    #final_nointrin_speedup = np.mean(nointrin_speedup, axis=0)
+    #final_intrin_speedup = np.mean(intrin_speedup, axis=0)
+    final_quest_speedup = stats.hmean(quest_speedup, axis=0)
+    
+
+    #Create figure
+    fig, ax1 = plt.subplots()
+
+    #Add titles and labels
+    plt.title('projectq/quest gpu speedup vs vector size')
+    plt.xlabel('vector size (2^n)', fontweight='bold')
+    plt.ylabel('speedup', fontweight='bold')
+
+    ax1.plot(qs, final_quest_speedup, 'b', label='relative to quest')
+    ax1.tick_params(axis='y', labelcolor='b')
+    # ax2.plot(qs, final_nointrin_speedup, 'r', label='relative to nointrin')
+    # ax2.tick_params(axis='y', labelcolor='r')
+    ax1.legend(loc='lower left')
+    # ax2.legend(loc='lower right')
+
+    #Apply linear regression and plot if r2 is sufficiently good
+    m,b,r_val,p_val,std_err = stats.linregress(np.array(qs, dtype=float), np.array(final_quest_speedup, dtype=float))
+    if(r_val > 0.98):
+        plt.plot(qs, m*np.array(qs, dtype=float)+b, '--k', label='linear interpolation')
+        print('gpu speedup relative to intrin vs vec size of 2^n: ', m, b)
+
+    #save plot
+    save_filename = 'plots/quest_gpu_speedup_vs_state_vector_size.png'
+    plt.savefig(save_filename)
+    plt.close(fig)
+    print("Generated " + save_filename)
+    plt.show()
+
 def plot_gpu_speedup_vs_vec_size_line():
     nointrin_speedup = []
     intrin_speedup = []
@@ -535,6 +626,7 @@ def plot_gpu_speedup_vs_qubit_spacing():
 #END OLD CODE SNIPPETS
 
 def main():
+    print(1)
     #Will be writing to plots directory. Make sure it exists
     if not os.path.exists('plots'):
         os.makedirs('plots')
@@ -544,19 +636,22 @@ def main():
         raise Exception('Please create data folder and fill it with the data you want parsed.')
 
     #Analysis of the effect of vector size
-    plot_gpu_speedup_vs_vec_size_line()
-    plot_time_vs_vec_size_bar()
+    # plot_gpu_speedup_vs_vec_size_line()
+    # plot_time_vs_vec_size_bar()
 
-    #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
-    plot_gpu_speedup_vs_operator_size_line()
-    plot_time_vs_operator_size_bar()
+    # #Analysis of the effect of the operator matrix size (aka number of quibits operated on)
+    # plot_gpu_speedup_vs_operator_size_line()
+    # plot_time_vs_operator_size_bar()
 
-    #Analysis of the effect of the magnitude of the qubit ids
-    plot_gpu_speedup_vs_qubit_magnitude_line()
-    plot_time_vs_qubit_magnitude_bar()
+    # #Analysis of the effect of the magnitude of the qubit ids
+    # plot_gpu_speedup_vs_qubit_magnitude_line()
+    # plot_time_vs_qubit_magnitude_bar()
 
-    plot_gpu_speedup_vs_qubit_spacing()
-    plot_time_vs_qubit_spacing_bar()
+    # plot_gpu_speedup_vs_qubit_spacing()
+    # plot_time_vs_qubit_spacing_bar()
+    print(2)
+    plot_quest_speedup_vs_vec_size_line()
+    print(3)
 
 if __name__ == "__main__":
     main()

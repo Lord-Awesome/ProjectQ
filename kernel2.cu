@@ -170,6 +170,7 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
 	start = std::chrono::high_resolution_clock::now();
+    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
     two_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, chunk_size);
     cudaDeviceSynchronize();
     stop = std::chrono::high_resolution_clock::now();
@@ -252,7 +253,7 @@ int main(int argc, char **argv) {
 
     //Apply gate
     //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+    //cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
 
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, source_matrix_vec.data());
 

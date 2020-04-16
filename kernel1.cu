@@ -161,8 +161,9 @@ std::cout << "kth qubit: " << qubit_id << std::endl;
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
-start = std::chrono::high_resolution_clock::now();
-
+    start = std::chrono::high_resolution_clock::now();
+    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+    std::cout << "pls work?\n\n";
     one_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, qubit_id, chunk_size);
     cudaDeviceSynchronize();
 stop = std::chrono::high_resolution_clock::now();
@@ -239,7 +240,7 @@ std::cout << "Ifstream failed with badbit" << std::endl;
     fin.close();
     //Apply gate
     //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+    //cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
 
     run_kernel(state_vec.data(), state_vec_size, kth_qubit, source_matrix_vec.data());
 

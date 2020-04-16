@@ -183,6 +183,7 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, M s
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
 	//std::cout << "Copying to device error is: " << cpy_error << std::endl;
 	start = std::chrono::high_resolution_clock::now();
+    cudaMemcpyToSymbol(operator_matrix, source_matrix, MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
     three_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, chunk_size);
 	//cudaError_t kernel_error = cudaGetLastError();
 	//std::cout << "Kernel error is: " << kernel_error << std::endl;
@@ -265,7 +266,7 @@ int main(int argc, char **argv) {
 
     //Apply gate
     //Fill operator matrix in const mem
-    cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
+    //cudaMemcpyToSymbol(operator_matrix, source_matrix_vec.data(), MAT_DIM * MAT_DIM * sizeof(complex), 0, cudaMemcpyHostToDevice);
 
     run_kernel(state_vec.data(), state_vec_size, quid0, quid1, quid2, source_matrix_vec.data());
 
