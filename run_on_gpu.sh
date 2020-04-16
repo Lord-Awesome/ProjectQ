@@ -23,23 +23,28 @@ module load cuda
 # Run
 # $1 is the num qubits
 # $2 is the kth qubit
+# $3, $4, etc. are the qubitids
 if [ $2 -eq 1 ]
 then
-	./kernel1.o $1 $2
+	./kernel1.o $1 $3
 fi
 if [ $2 -eq 2 ]
 then
-	./kernel2.o $1 $2 $3
+	./kernel2.o $1 $3 $4
 fi
 if [ $2 -eq 3 ]
 then
-	./kernel3.o $1 $2 $3 $4
+	# rm kernel3_analysis.prof
+	# nvprof --analysis-metrics --track-memory-allocations on -o kernel3_analysis.prof ./kernel3.o $1 $3 $4 $5
+	./kernel3.o $1 $3 $4 $5
 fi
 if [ $2 -eq 4 ]
 then
-	./kernel4.o $1 $2 $3 $4 $5
+	./kernel4.o $1 $3 $4 $5 $6
 fi
 if [ $2 -eq 5 ]
 then
-	./kernel5.o $1 $2 $3 $4 $5 $6
+	#rm kernel5_analysis.prof
+	#nvprof --analysis-metrics --track-memory-allocations on -o kernel5_analysis.prof ./kernel5.o $1 $3 $4 $5 $6 $7
+	./kernel5.o $1 $3 $4 $5 $6 $7
 fi

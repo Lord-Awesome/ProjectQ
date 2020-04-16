@@ -31,6 +31,22 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+class get_cuda_library(object):
+    """Helper class to determine if cuda is present"""
+
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        from ctypes import cdll
+        from ctypes import util
+        try:
+            a = cdll.LoadLibrary('libcudart.so.10.1')
+            print('*****???' + str(a.__dict__))
+            return 'cudart'
+        except OSError:
+            # Return something inoffensive that always works
+            return 'm'
 
 cppsim = Feature(
     'C++ Simulator',
@@ -44,7 +60,9 @@ cppsim = Feature(
                 get_pybind_include(),
                 get_pybind_include(user=True)
             ],
-            language='c++'
+            language='c++',
+            libraries=['cudart'],
+            library_dirs=['/sw/arcts/centos7/cuda/10.1.105/lib64/']
         ),
     ],
 )

@@ -19,6 +19,8 @@ int main(int argc, char **argv) {
     std::vector<complex> state_vec;
     std::ifstream fin;
     complex temp;
+
+
 	/*
     fin.open(VEC_FILENAME);
     while(fin >> temp) {
@@ -26,6 +28,8 @@ int main(int argc, char **argv) {
     }
     fin.close();
 	*/
+
+
     for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));

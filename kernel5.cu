@@ -59,113 +59,149 @@ __global__ void five_qubit_kernel(complex* vec, int vec_size, int qid0, int qid1
     //qid0 is smaller than qid1
 
     //Initialize shared memory
-    //extern __shared__ complex smem[];
+    __shared__ int smem[20];
 
-    int elements_per_thread = MAT_DIM; //4 quibit kernel
-    int working_set = elements_per_chunk;
-
-    int blocks_in_state_vector = ceil(vec_size / (float) (elements_per_thread * blockDim.x));
-	//int flag = 0;
+    int blocks_in_state_vector = ceil(vec_size / (float) (MAT_DIM * blockDim.x));
     for(int global_block_id = blockIdx.x; global_block_id < blocks_in_state_vector; global_block_id += gridDim.x) {
+		__syncthreads();
 
-        //inside batch0
-        int blocks_per_batch0 = (1 << qid0) / working_set;
-        int batch0_stride = 2 * (1 << qid0);
-
-        //inside batch1
-        int blocks_per_batch1 = (1 << qid1) / (2 * working_set);
-        int batch1_depth = (global_block_id % blocks_per_batch1);
-        int batch1_stride = 2 * (1 << qid1);
-
-		//inside batch2
-		int blocks_per_batch2 = (1 << qid2) / (4 * working_set);
-		int batch2_depth = (global_block_id % blocks_per_batch2);
+		int batch0_stride = 2 * (1 << qid0);
+		int batch1_stride = 2 * (1 << qid1);
 		int batch2_stride = 2 * (1 << qid2);
-
-		//inside batch3
-		int blocks_per_batch3 = (1 << qid3) / (8 * working_set);
-		int batch3_depth = (global_block_id % blocks_per_batch3);
 		int batch3_stride = 2 * (1 << qid3);
-
-		//inside batch4
-		int blocks_per_batch4 = (1 << qid4) / (16 * working_set);
-		int batch4_depth = (global_block_id % blocks_per_batch4);
 		int batch4_stride = 2 * (1 << qid4);
 
-        //ids
-        int chunk_id = global_block_id % blocks_per_batch0;
-        int batch0_id = batch1_depth / blocks_per_batch0;
-        int batch1_id = batch2_depth / blocks_per_batch1;
-        int batch2_id = batch3_depth / blocks_per_batch2;
-        int batch3_id = batch4_depth / blocks_per_batch3;
-        int batch4_id = global_block_id / blocks_per_batch4;
-
         int element_id_base = 0;
-        element_id_base += threadIdx.x;
-        element_id_base += chunk_id * working_set;
-        element_id_base += batch0_id * batch0_stride;
-        element_id_base += batch1_id * batch1_stride;
-        element_id_base += batch2_id * batch2_stride;
-        element_id_base += batch3_id * batch3_stride;
-        element_id_base += batch4_id * batch4_stride;
+		int global_thread_id = (threadIdx.x + global_block_id * blockDim.x);
+		{
+		element_id_base += global_thread_id % (batch0_stride/2);
+		}
+
+		{
+		int batch1_depth = global_thread_id % (batch1_stride/4);
+		int batch0_id = batch1_depth / (batch0_stride/2);
+
+		element_id_base += batch0_id * batch0_stride;
+		}
+
+		{
+		int batch2_depth = global_thread_id % (batch2_stride/8);
+		int batch1_id = batch2_depth / (batch1_stride/4);
+
+		element_id_base += batch1_id * batch1_stride;
+		}
+
+		{
+		int batch3_depth = global_thread_id % (batch3_stride/16);
+		int batch2_id = batch3_depth / (batch2_stride/8);
+
+		element_id_base += batch2_id * batch2_stride;
+		}
+
+		{
+		int batch4_depth = global_thread_id % (batch4_stride/32);
+		int batch3_id = batch4_depth / (batch3_stride/16);
+
+		element_id_base += batch3_id * batch3_stride;
+		}
+
+		{
+		int batch4_id = global_thread_id / (batch4_stride/32);
+
+		element_id_base += batch4_id * batch4_stride;
+		}
 
         //iteration dependent
 
-        complex result[MAT_DIM];
-        for(int row = 0; row < MAT_DIM; row++) {
-            result[row] = C(0.0f, 0.0f);
-        }
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-				for (int k = 0; k < 2; k++) {
-					for (int l = 0; l < 2; l++) {
-						for (int m = 0; m < 2; m++) {
-							int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));
-							int element_id = element_id_base + offset;
+#define compute(i,j,k,l,m)\
+		{\
+		int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));\
+		int element_id = element_id_base + offset;\
+		complex val = C(0.0f,0.0f);\
+		if(element_id < vec_size) val = vec[element_id];\
+		int column = (16*i)+(8*j)+(4*k)+(2*l)+m;\
+		for(int row = 0; row < MAT_DIM; row++) result[row] = result[row] + (operator_matrix[row][column]*val);\
+		}
 
-							//load
-							complex val = C(0.0f,0.0f);
-							if(element_id < vec_size) {
-								val = vec[element_id];
-							}
 
-							//compute
-							int column = (16*i)+(8*j)+(4*k)+(2*l)+m;
-							for(int row = 0; row < MAT_DIM; row++) {
-								result[row] = result[row] + (operator_matrix[row][column]*val);
-								//result[row] = result[row] + (val*C(1.0f,0.0f));
-							}
-						}//m
-					}//l
-				}//k
-            }//j
-        }//i
+		complex result[MAT_DIM];
+        for(int row = 0; row < MAT_DIM; row++) result[row] = C(0.0f, 0.0f);
 
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-				for (int k = 0; k < 2; k++) {
-					for (int l = 0; l < 2; l++) {
-						for (int m = 0; m < 2; m++) {
-							int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));
-							int element_id = element_id_base + offset;
 
-							//store
-							int row = (16*i)+(8*j)+(4*k)+(2*l)+m;
-							if(element_id < vec_size) {
-								vec[element_id] = result[row];
-								//vec[element_id] = C((float)element_id, cuCrealf(result[row]));
-							}
-							/*
-							else if (flag != 1){
-								vec[0] = C((float)element_id, cuCrealf(result[row]));
-								flag = 1;
-							}
-							*/
-						}//m
-					}//l
-				}//k
-            }//j
-        }//i
+		compute(0,0,0,0,0);
+		compute(0,0,0,0,1);
+		compute(0,0,0,1,0);
+		compute(0,0,0,1,1);
+		compute(0,0,1,0,0);
+		compute(0,0,1,0,1);
+		compute(0,0,1,1,0);
+		compute(0,0,1,1,1);
+		compute(0,1,0,0,0);
+		compute(0,1,0,0,1);
+		compute(0,1,0,1,0);
+		compute(0,1,0,1,1);
+		compute(0,1,1,0,0);
+		compute(0,1,1,0,1);
+		compute(0,1,1,1,0);
+		compute(0,1,1,1,1);
+		compute(1,0,0,0,0);
+		compute(1,0,0,0,1);
+		compute(1,0,0,1,0);
+		compute(1,0,0,1,1);
+		compute(1,0,1,0,0);
+		compute(1,0,1,0,1);
+		compute(1,0,1,1,0);
+		compute(1,0,1,1,1);
+		compute(1,1,0,0,0);
+		compute(1,1,0,0,1);
+		compute(1,1,0,1,0);
+		compute(1,1,0,1,1);
+		compute(1,1,1,0,0);
+		compute(1,1,1,0,1);
+		compute(1,1,1,1,0);
+		compute(1,1,1,1,1);
+
+
+		#define store(i,j,k,l,m) \
+		{\
+		int offset = (i * (1 << qid4)) + (j * (1 << qid3)) + (k * (1 << qid2)) + (l * (1 << qid1)) + (m * (1 << qid0));\
+		int element_id = element_id_base + offset;\
+		int row = (16*i)+(8*j)+(4*k)+(2*l)+m;\
+		if(element_id < vec_size) vec[element_id] = result[row];\
+		}
+
+		store(0,0,0,0,0);
+		store(0,0,0,0,1);
+		store(0,0,0,1,0);
+		store(0,0,0,1,1);
+		store(0,0,1,0,0);
+		store(0,0,1,0,1);
+		store(0,0,1,1,0);
+		store(0,0,1,1,1);
+		store(0,1,0,0,0);
+		store(0,1,0,0,1);
+		store(0,1,0,1,0);
+		store(0,1,0,1,1);
+		store(0,1,1,0,0);
+		store(0,1,1,0,1);
+		store(0,1,1,1,0);
+		store(0,1,1,1,1);
+		store(1,0,0,0,0);
+		store(1,0,0,0,1);
+		store(1,0,0,1,0);
+		store(1,0,0,1,1);
+		store(1,0,1,0,0);
+		store(1,0,1,0,1);
+		store(1,0,1,1,0);
+		store(1,0,1,1,1);
+		store(1,1,0,0,0);
+		store(1,1,0,0,1);
+		store(1,1,0,1,0);
+		store(1,1,0,1,1);
+		store(1,1,1,0,0);
+		store(1,1,1,0,1);
+		store(1,1,1,1,0);
+		store(1,1,1,1,1);
 
     }
 }
@@ -190,11 +226,8 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
 	//A chunk can't be larger than shared memory because we need to hold it all at once
 	//A chunk can't be larger than the threads in a block because we need one thread to handle each element
 	//A chunk can't be larger than a batch by definition
-    int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
-	//CRK: Full blocks are allocating too many resources (not enough registers per block), so I'm nerfing it
-	if (chunk_size > 256) {
-		chunk_size = 256;
-	}
+    //int chunk_size = std::min(std::min(smem_size_in_elems, max_threads_per_block),(int) batch_size);
+	int chunk_size = 256;
     int chunk_size_in_bytes = chunk_size * sizeof(complex);
     dim3 blockDim(chunk_size);
 	int max_grid_size = deviceProp.maxGridSize[0];
@@ -224,24 +257,25 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, int quid2, int
     std::cout << "grid dim: " << gridDim.x << std::endl;
 
     //memcpy and run the kernel
-	start = std::chrono::high_resolution_clock::now();
 
     complex *d_vec;
     cudaError_t malloc_error = cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
-	std::cout << "Malloc error is: " << malloc_error << std::endl;
+	//std::cout << "Malloc error is: " << malloc_error << std::endl;
     cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
-	std::cout << "Copying to device error is: " << cpy_error << std::endl;
+	//std::cout << "Copying to device error is: " << cpy_error << std::endl;
+	start = std::chrono::high_resolution_clock::now();
     five_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, quid2, quid3, quid4, chunk_size);
+	stop = std::chrono::high_resolution_clock::now();
     cudaDeviceSynchronize();
-	cudaError_t err = cudaGetLastError();
-	if (err != cudaSuccess) {
-		std::cout << "Kernel failed with error: " << cudaGetErrorString(err) << std::endl;
-	}
+	//cudaError_t err = cudaGetLastError();
+	//if (err != cudaSuccess) {
+		//std::cout << "Kernel failed with error: " << cudaGetErrorString(err) << std::endl;
+	//}
     cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
-	std::cout << "Copying to host error is: " << cpy_error << std::endl;
+	//std::cout << "Copying to host error is: " << cpy_error << std::endl;
     cudaFree(d_vec);
 
-	stop = std::chrono::high_resolution_clock::now();
+	
 }
 
 int main(int argc, char **argv) {
@@ -263,24 +297,18 @@ int main(int argc, char **argv) {
     std::ifstream fin;
     complex temp;
 	std::complex<float> std_complex_temp;
+
+
 	/*
     fin.open(FILENAME);
     while(fin >> std_complex_temp) {
 		temp = C(std_complex_temp.real(), std_complex_temp.imag());
         state_vec.push_back(temp);
     }
-	if (fin.rdstate() == std::ios_base::failbit) {
-		std::cout << "Ifstream failed with failbit" << std::endl;
-	}
-	else if (fin.rdstate() == std::ios_base::eofbit) {
-		std::cout << "Ifstream failed with eofbit" << std::endl;
-	}
-	else if (fin.rdstate() == std::ios_base::badbit) {
-		std::cout << "Ifstream failed with badbit" << std::endl;
-	}
-	std::cout << "Vector size: " << state_vec_size << std::endl;
     fin.close();
 	*/
+
+
     for (unsigned long i = 0; i < 1 << atoi(argv[1]); i++){ 
         //Note: normalization ignored for now
         float real = ((float) rand() / (float) (RAND_MAX));
@@ -288,6 +316,7 @@ int main(int argc, char **argv) {
         complex val = C(real, imag);
 		state_vec.push_back(val);
     }
+
 
     unsigned long state_vec_size = state_vec.size();
 
@@ -327,6 +356,7 @@ int main(int argc, char **argv) {
 	f_time << "GPU time: " << duration.count() << "\n";
 	f_time.close();
  
+/*
     std::ofstream f;
     f.open("output.txt");
     for (unsigned long i = 0; i < state_vec_size; ++i) {
@@ -334,6 +364,7 @@ int main(int argc, char **argv) {
         f << val;	
     }
     f.close();
+*/
     
     //debug
     std::cout << "size: " << state_vec.size() << std::endl;

@@ -23,7 +23,7 @@
 #else
 #include "intrin/kernels.hpp"
 #endif
-
+//#include "cuda/kernel1.h"
 #include "intrin/alignedallocator.hpp"
 #include "fusion.hpp"
 #include <map>
@@ -32,7 +32,6 @@
 #include <tuple>
 #include <random>
 #include <functional>
-
 
 class Simulator{
 public:
@@ -50,6 +49,10 @@ public:
         vec_[0]=1.; // all-zero initial state
         std::uniform_real_distribution<double> dist(0., 1.);
         rng_ = std::bind(dist, std::ref(rnd_eng_));
+    }
+    
+    void test() {
+        //hello();
     }
 
     void allocate_qubit(unsigned id){
@@ -484,6 +487,7 @@ public:
     }
 
     void run(){
+        test();
         if (fused_gates_.size() < 1)
             return;
 

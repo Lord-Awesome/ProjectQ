@@ -7,8 +7,8 @@ MAX_NUM_QUBIT_IDS=5
 rm time_comparison.txt
 
 #echo "\n\n---------- Compiling with G++----------\n\n"
-g++ --std=c++11 gen_state_vec.cpp -o gen_state_vec.o || exit 1
-#g++ --std=c++11 gen_source_matrix.cpp -o gen_source_matrix.o || exit 1
+#g++ --std=c++11 gen_state_vec.cpp -o gen_state_vec.o || exit 1
+g++ --std=c++11 gen_source_matrix.cpp -o gen_source_matrix.o || exit 1
 g++ -g --std=c++11 projectq_kernel_nointrin_runner.cpp -o projectq_kernel_nointrin_runner.o -I./projectq/backends/_sim/_cppkernels/nointrin/ || exit 1
 g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_intrin_runner.o -I./projectq/backends/_sim/_cppkernels/intrin/ || exit 1
 
@@ -17,7 +17,7 @@ g++ -g --std=c++11 -mavx projectq_kernel_intrin_runner.cpp -o projectq_kernel_in
 #nvcc --std=c++11 kernel2.cu -o kernel2.o || exit 1
 #nvcc --std=c++11 kernel3.cu -o kernel3.o || exit 1
 #nvcc --std=c++11 kernel4.cu -o kernel4.o || exit 1
-nvcc --std=c++11 kernel5.cu -o kernel5.o || exit 1
+nvcc --std=c++11 -O3 kernel5.cu -o kernel5.o || exit 1
 
 for ((NUM_QUBIT_IDS=$MIN_NUM_QUBIT_IDS; NUM_QUBIT_IDS<=$MAX_NUM_QUBIT_IDS; NUM_QUBIT_IDS++));
 do
