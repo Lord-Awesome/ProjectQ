@@ -34,9 +34,9 @@ then
 fi
 if [ $2 -eq 3 ]
 then
-	rm kernel3_analysis.prof
-	nvprof --analysis-metrics --track-memory-allocations on -o kernel3_analysis.prof ./kernel3.o $1 $3 $4 $5
-	#./kernel3.o $1 $3 $4 $5
+	# rm kernel3_analysis.prof
+	# nvprof --analysis-metrics --track-memory-allocations on -o kernel3_analysis.prof ./kernel3.o $1 $3 $4 $5
+	./kernel3.o $1 $3 $4 $5
 fi
 if [ $2 -eq 4 ]
 then

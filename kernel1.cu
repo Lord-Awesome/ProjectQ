@@ -156,17 +156,20 @@ std::cout << "kth qubit: " << qubit_id << std::endl;
     std::cout << "grid dim: " << gridDim.x << std::endl;
 
     //memcpy and run the kernel
-start = std::chrono::high_resolution_clock::now();
+
 
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
     cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
+start = std::chrono::high_resolution_clock::now();
+
     one_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, qubit_id, chunk_size);
     cudaDeviceSynchronize();
+stop = std::chrono::high_resolution_clock::now();
     cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
     cudaFree(d_vec);
 
-stop = std::chrono::high_resolution_clock::now();
+
 }
 
 int main(int argc, char **argv) {

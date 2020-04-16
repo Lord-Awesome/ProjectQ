@@ -59,6 +59,7 @@ def plot_gpu_speedup_vs_vec_size_line():
             qs.append(d['num_qubits'])
             nointrin_speedup[-1].append(d['nointrin']/d['gpu']) #speedup is inverse of time
             intrin_speedup[-1].append(d['intrin']/d['gpu']) #speedup is inverse of time
+            print(d['num_qubits'], intrin_speedup[-1][-1], nointrin_speedup[-1][-1])
 
     #final_nointrin_speedup = (*map(mean,zip(*nointrin_speedup)))
     #final_intrin_speedup = (*map(mean,zip(*intrin_speedup)))

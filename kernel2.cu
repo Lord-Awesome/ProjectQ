@@ -164,19 +164,20 @@ void run_kernel(complex* vec, int vec_size, int quid0, int quid1, M source_matri
     std::cout << "grid dim: " << gridDim.x << std::endl;
 
     //memcpy and run the kernel
-	start = std::chrono::high_resolution_clock::now();
+
 
     complex *d_vec;
     cudaMalloc((void **) &d_vec, vec_size*sizeof(complex));
-    cudaError_t cpy_error = cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
-	//std::cout << "Copying to device error is: " << cpy_error << std::endl;
+    cudaMemcpy(d_vec, vec, vec_size*sizeof(complex), cudaMemcpyHostToDevice);
+	start = std::chrono::high_resolution_clock::now();
     two_qubit_kernel<<<gridDim, blockDim, chunk_size_in_bytes>>>(d_vec, vec_size, quid0, quid1, chunk_size);
     cudaDeviceSynchronize();
-    cpy_error = cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
+    stop = std::chrono::high_resolution_clock::now();
+    cudaMemcpy(vec, d_vec, vec_size*sizeof(complex), cudaMemcpyDeviceToHost);
 	//std::cout << "Copying to host error is: " << cpy_error << std::endl;
     cudaFree(d_vec);
 
-	stop = std::chrono::high_resolution_clock::now();
+	
 }
 
 int main(int argc, char **argv) {
